@@ -1,0 +1,5 @@
+Region API:
+ - Add method documentation
+ - Add constants in a clean and intelligent manner
+ - Finish PolyPolygon implementation and clean up Polygon implementation (ugly).
+ - General tidying up.

@@ -1,0 +1,9 @@
+// $Id: config.w32,v 1.4 2004/07/20 05:26:33 pollita Exp $
+// vim:ft=javascript
+
+ARG_WITH("wingdi", "WinAPI GDI", "no");
+
+if (PHP_WINGDI != "no") {
+	EXTENSION("wingdi", "php_windgi.c php_wingdipen.c php_wingdicolor.c php_wingdibrush.c");
+	AC_DEFINE('HAVE_WINGDI', 1, 'Windows API GDI funtionality');
+}

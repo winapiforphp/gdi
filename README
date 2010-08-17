@@ -1,0 +1,3 @@
+Base dll for wingdi wrapper - probably only for cli/embed SAPIS
+
+Goal is not only raw gdi usage, but maybe even some of the fancier usage from gdi+
