@@ -22,7 +22,9 @@
 #include "php_wingdi.h"
 #include "zend_exceptions.h"
 
-zend_class_entry *ce_wingdi_region;
+zend_class_entry *ce_wingdi_region,
+                 *ce_wingdi_region_combine;
+
 void wingdi_region_object_destroy(void * object TSRMLS_DC);
 
 /* {{{ zend_object_value wingdi_region_object_new(zend_class_entry *ce TSRMLS_DC)
@@ -234,7 +236,7 @@ PHP_METHOD(WinGdiRegion, frame)
         height;
 
     WINGDI_ERROR_HANDLING();
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zzll", &dc_obj, &br_zval, &width, &height) == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zzll", &dc_zval, &br_zval, &width, &height) == FAILURE)
         return;
     WINGDI_RESTORE_ERRORS();
 
@@ -459,6 +461,16 @@ PHP_MINIT_FUNCTION(wingdi_region)
     INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_NS, "Region", wingdi_region_functions);
 	ce_wingdi_region = zend_register_internal_class(&ce TSRMLS_CC);
 	ce_wingdi_region->create_object = wingdi_region_object_new;
+
+    INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_REGION_NS, "Combine", NULL); 
+    ce_wingdi_region_combine = zend_register_internal_class_ex(&ce, ce_wingdi_region, PHP_WINGDI_REGION_NS TSRMLS_CC);
+    ce_wingdi_region_combine->ce_flags |= ZEND_ACC_IMPLICIT_ABSTRACT_CLASS | ZEND_ACC_FINAL_CLASS;
+    // PHP doesn't like constants using reserved keywords, so we'll prefix these.
+    zend_declare_class_constant_long(ce_wingdi_region_combine, "RGN_COPY", sizeof("RGN_COPY") - 1, RGN_COPY TSRMLS_CC);
+    zend_declare_class_constant_long(ce_wingdi_region_combine, "RGN_DIFF", sizeof("RGN_DIFF") - 1, RGN_DIFF TSRMLS_CC);
+    zend_declare_class_constant_long(ce_wingdi_region_combine, "RGN_AND",  sizeof("RGN_AND") - 1,  RGN_AND  TSRMLS_CC);
+    zend_declare_class_constant_long(ce_wingdi_region_combine, "RGN_XOR",  sizeof("RGN_XOR") - 1,  RGN_XOR  TSRMLS_CC);
+    zend_declare_class_constant_long(ce_wingdi_region_combine, "RGN_OR",   sizeof("RGN_OR") -1,    RGN_OR   TSRMLS_CC);
 
     PHP_MINIT(wingdi_region_rectangle)(INIT_FUNC_ARGS_PASSTHRU);
     PHP_MINIT(wingdi_region_roundedrectangle)(INIT_FUNC_ARGS_PASSTHRU);

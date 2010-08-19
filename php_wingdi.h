@@ -47,6 +47,7 @@
 #define PHP_WINGDI_DISPLAYCONTEXT_NS ZEND_NS_NAME(PHP_WINGDI_NS, "DisplayContext")
 #define PHP_WINGDI_PEN_NS            ZEND_NS_NAME(PHP_WINGDI_NS, "Pen")
 #define PHP_WINGDI_REGION_NS         ZEND_NS_NAME(PHP_WINGDI_NS, "Region")
+#define PHP_WINGDI_REGION_POLY_NS    ZEND_NS_NAME(PHP_WINGDI_REGION_NS, "Polygon")
 
 /** Shortens the amount of typing needed, a little */
 #define WINGDI_ERROR_HANDLING() \

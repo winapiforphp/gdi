@@ -22,7 +22,8 @@
 #include "php_wingdi.h"
 #include "zend_exceptions.h"
 
-zend_class_entry *ce_wingdi_polygon_region;
+zend_class_entry *ce_wingdi_polygon_region,
+                 *ce_wingdi_polygon_region_fill;
 
 /* ----------------------------------------------------------------
   Win\Gdi\Region\Polygon Userland API                                                    
@@ -226,6 +227,12 @@ PHP_MINIT_FUNCTION(wingdi_region_polygon)
     ce_wingdi_polygon_region =
         zend_register_internal_class_ex(&ce, ce_wingdi_region, PHP_WINGDI_REGION_NS TSRMLS_CC);
     ce_wingdi_polygon_region->create_object = wingdi_region_object_new;
+
+    INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_REGION_POLY_NS, "Fill", NULL);
+    ce_wingdi_polygon_region_fill = zend_register_internal_class_ex(&ce, ce_wingdi_polygon_region, PHP_WINGDI_REGION_POLY_NS TSRMLS_CC);
+    ce_wingdi_polygon_region_fill->ce_flags |= ZEND_ACC_IMPLICIT_ABSTRACT_CLASS | ZEND_ACC_FINAL_CLASS;
+    zend_declare_class_constant_long(ce_wingdi_polygon_region_fill, "ALTERNATE", sizeof("ALTERNATE") - 1, ALTERNATE TSRMLS_CC);
+    zend_declare_class_constant_long(ce_wingdi_polygon_region_fill, "WINDING",   sizeof("WINDING")  - 1,  WINDING   TSRMLS_CC);
 
     return SUCCESS;
 }
