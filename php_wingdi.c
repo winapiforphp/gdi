@@ -13,6 +13,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Author: Elizabeth M. Smith <auroraeosrose@php.net>                   |
+  |         Mark G. Skilbeck   <markskilbeck@php.net>                    |
   +----------------------------------------------------------------------+
 */
 

@@ -37,14 +37,13 @@ zend_object_handlers wingdi_color_object_handlers;
  */
 PHP_METHOD(WinGdiColor, __construct)
 {
-	zend_error_handling error_handling;
 	zval *colval = NULL;
 	long red=0, green=0, blue=0;
 	long hex;
 	
 	zend_object *color_obj = (zend_object*)zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+    WINGDI_ERROR_HANDLING()
 	/* we can have no args which creates a black object
 	   or have one arg which can be a string (with or without #) or long color value
 	   or 1, 2 or 3 args as long values */
@@ -88,6 +87,8 @@ PHP_METHOD(WinGdiColor, __construct)
 
 		}
 	}
+    WINGDI_RESTORE_ERRORS()
+
 	/* rgb sanity checking */
 	red = MAX(0,MIN(255,red));
 	green = MAX(0,MIN(255,green));
@@ -100,7 +101,6 @@ PHP_METHOD(WinGdiColor, __construct)
 	zend_update_property_long(ce_WinGdiColor, getThis(), "blue", sizeof("blue") - 1, blue TSRMLS_CC);
 	zend_update_property_long(ce_WinGdiColor, getThis(), "hex", sizeof("hex") - 1, hex TSRMLS_CC);
 
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
 	return;
 }
 /* }}} */

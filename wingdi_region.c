@@ -13,7 +13,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Author: Elizabeth M. Smith <auroraeosrose@php.net>                   |
-  |         Mark Skilbeck <markskilbeck@php.net>                         |
+  |         Mark G. Skilbeck   <markskilbeck@php.net>                    |
   +----------------------------------------------------------------------+
 */
 
@@ -23,10 +23,6 @@
 #include "zend_exceptions.h"
 
 zend_class_entry *ce_wingdi_region;
-zend_class_entry *ce_wingdi_rect_region;
-zend_class_entry *ce_wingdi_round_region;
-zend_class_entry *ce_wingdi_elliptic_region;
-zend_class_entry *ce_wingdi_polygon_region;
 void wingdi_region_object_destroy(void * object TSRMLS_DC);
 
 /* {{{ zend_object_value wingdi_region_object_new(zend_class_entry *ce TSRMLS_DC)
@@ -147,43 +143,22 @@ PHP_METHOD(WinGdiRegion, equal)
 	BOOL result;
 	wingdi_region_object *reg_obj_a,
 						 *reg_obj_b;
-	zend_error_handling  error_handling;
-
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+	
+	WINGDI_ERROR_HANDLING()
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz", &reg_a_zval, &reg_b_zval) == FAILURE)
 		return;
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	WINGDI_RESTORE_ERRORS()
 
-	/*if (Z_TYPE_P(reg_a_zval) == IS_OBJECT && 
-		instanceof_function(Z_OBJCE_P(reg_a_zval), ce_wingdi_region TSRMLS_CC))
-	{*/
-		reg_obj_a = (wingdi_region_object *)wingdi_region_object_get(reg_a_zval TSRMLS_CC);
-	/*}
-	else
-	{
-		zend_throw_exception(ce_wingdi_argexception, 
-			"Win\\Gdi\\Region::equal() expects parameter 1 to be of type Win\\Gdi\\Region", 0 TSRMLS_CC);
-		return;
-	}
-
-	if (Z_TYPE_P(reg_b_zval) == IS_OBJECT &&
-		instanceof_function(Z_OBJCE_P(reg_b_zval), ce_wingdi_region TSRMLS_CC))
-	{*/
-		reg_obj_b = (wingdi_region_object *)wingdi_region_object_get(reg_b_zval TSRMLS_CC);
-	/*}
-	else 
-	{
-		zend_throw_exception(ce_wingdi_argexception,
-			"Win\\Gdi\\Region::equal() expects parameter 2 to be of type Win\\Gdi\\Region", 0 TSRMLS_CC);
-		return;
-	}*/
+    reg_obj_a = (wingdi_region_object *)wingdi_region_object_get(reg_a_zval TSRMLS_CC);
+	reg_obj_b = (wingdi_region_object *)wingdi_region_object_get(reg_b_zval TSRMLS_CC);
 
 	result = EqualRgn(reg_obj_a->region_handle, reg_obj_b->region_handle);
-
 	RETURN_BOOL(result);
 }
 
 /* {{{ proto void Win\Gdi\Region::combine(Win\Gdi\Region dest, Win\Gdi\Region source1, Win\Gdi\Region source2, int mode)
+       Combines two regions into the destination region. The two regions are combined according
+       to the specified mode.
 */
 PHP_METHOD(WinGdiRegion, combine)
 {
@@ -195,14 +170,13 @@ PHP_METHOD(WinGdiRegion, combine)
 	wingdi_region_object *reg_obj_out,
                          *reg_obj_a,
 						 *reg_obj_b;
-	zend_error_handling  error_handling;
-
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+	
+	WINGDI_ERROR_HANDLING()
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zzzl", &reg_out_zval, &reg_a_zval, &reg_b_zval, &mode) == FAILURE)
 	{
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	WINGDI_RESTORE_ERRORS()
 
     reg_obj_out = (wingdi_region_object *)wingdi_region_object_get(reg_out_zval TSRMLS_CC);
     reg_obj_a = (wingdi_region_object *)wingdi_region_object_get(reg_a_zval TSRMLS_CC);
@@ -226,15 +200,14 @@ PHP_METHOD(WinGdiRegion, fill)
 	wingdi_displaycontext_object *dc_obj;
 	wingdi_region_object *reg_obj;
 	wingdi_brush_object  *brush_obj;
-	zend_error_handling  error_handling;
-	zval *dc_zval,
+		zval *dc_zval,
 		 *brush_zval;
 	BOOL result;
 
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+	WINGDI_ERROR_HANDLING()
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz", &dc_zval, &brush_zval) == FAILURE)
 		return;
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	WINGDI_RESTORE_ERRORS()
 
 	dc_obj    = wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
 	reg_obj   = wingdi_region_object_get(getThis() TSRMLS_CC);
@@ -251,15 +224,14 @@ PHP_METHOD(WinGdiRegion, fill)
 */
 PHP_METHOD(WinGdiRegion, getBox)
 {
-	zend_error_handling  error_handling;
-	wingdi_region_object *reg_obj;
+		wingdi_region_object *reg_obj;
 	LPRECT    box = malloc(sizeof(RECT));
 	int       result;
 
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+	WINGDI_ERROR_HANDLING()
 	if (zend_parse_parameters_none() == FAILURE)
 		return;
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	WINGDI_RESTORE_ERRORS()
 
 	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
 	/** Should we do anything with the return of GetRgnBox(), other than check for an error? */
@@ -280,20 +252,20 @@ PHP_METHOD(WinGdiRegion, getBox)
 }
 /* }}} */
 
-/* {{{
+/* {{{ proto bool Win\Gdi\Region->invert()
+       Inverts a region's colors
 */
 PHP_METHOD(WinGdiRegion, invert)
 {
-	zend_error_handling  error_handling;
-	wingdi_region_object *reg_obj;
+		wingdi_region_object *reg_obj;
 	wingdi_displaycontext_object *dc_obj;
 	zval *dc_zval;
 	BOOL result;
 
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+	WINGDI_ERROR_HANDLING()
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &dc_zval) == FAILURE)
 		return;
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	WINGDI_RESTORE_ERRORS()
 
 	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
 	dc_obj  = wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
@@ -304,20 +276,20 @@ PHP_METHOD(WinGdiRegion, invert)
 }
 /* }}} */
 
-/* {{{ 
+/* {{{ proto int Win\Gdi\Region->offset(int x, int y)
+       Moves a region by the specificed offsets
 */
 PHP_METHOD(WinGdiRegion, offset)
 {
-	zend_error_handling  error_handling;
-	wingdi_region_object *reg_obj;
+		wingdi_region_object *reg_obj;
 	int x_offset,
 		y_offset,
 		result;
 
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+	WINGDI_ERROR_HANDLING()
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll", &x_offset, &y_offset) == FAILURE)
 		return;
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	WINGDI_RESTORE_ERRORS()
 
 	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
 
@@ -332,20 +304,21 @@ PHP_METHOD(WinGdiRegion, offset)
 }
 /* }}} */
 
-/* {{{ 
+/* {{{ proto bool Win\Gdi\Region->paint(Win\Gdi\DeviceContext dc)
+       Paints the specified region by using the brush currently selected into
+       the device context
 */
 PHP_METHOD(WinGdiRegion, paint)
 {
-	zend_error_handling  error_handling;
-	wingdi_region_object *reg_obj;
+		wingdi_region_object *reg_obj;
 	wingdi_displaycontext_object *dc_obj;
 	zval *dc_zval;
 	BOOL result;
 
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+	WINGDI_ERROR_HANDLING()
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &dc_zval) == FAILURE)
 		return;
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	WINGDI_RESTORE_ERRORS()
 
 	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
 	dc_obj  = wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
@@ -362,15 +335,14 @@ PHP_METHOD(WinGdiRegion, paint)
 */
 PHP_METHOD(WinGdiRegion, pointIn)
 {
-	zend_error_handling  error_handling;
-	wingdi_region_object *reg_obj;
+		wingdi_region_object *reg_obj;
 	BOOL result;
 	int  x, y;
 
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+	WINGDI_ERROR_HANDLING()
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll", &x, &y) == FAILURE)
 		return;
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	WINGDI_RESTORE_ERRORS()
 
 	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
 
@@ -379,21 +351,21 @@ PHP_METHOD(WinGdiRegion, pointIn)
 }
 /* }}} */
 
-/* {{{
+/* {{{ proto bool Win\Gdi\Region->rectangleIn(array rect_coords)
+       Determines whether any part of the specified rectangle is in the region
 */
 PHP_METHOD(WinGdiRegion, rectangleIn)
 {
-	zend_error_handling  error_handling;
-	wingdi_region_object *reg_obj;
+		wingdi_region_object *reg_obj;
 	zval *rect_zval;
 	BOOL result;
 	LONG *left, *top, *right, *bottom;
 	RECT rect;
 
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+	WINGDI_ERROR_HANDLING()
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &rect_zval) == FAILURE)
 		return;
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	WINGDI_RESTORE_ERRORS()
 
 	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
 	zend_hash_index_find(Z_ARRVAL_P(rect_zval), 0, &left);
@@ -408,36 +380,27 @@ PHP_METHOD(WinGdiRegion, rectangleIn)
 
 	RETURN_BOOL(result)
 }
+/* }}} */
 
-/* {{{
+/* {{{ proto bool Win\Gdi\Region->setRectangle()
 */
 PHP_METHOD(WinGdiRegion, setRectangle)
 {
-	zend_error_handling  error_handling;
-	zend_object_value    obj_val;
-	wingdi_region_object *old_reg, *new_reg;
-	zval *old_reg_zval;
-	BOOL result;
-	int left, top,
-        right, bottom;
-
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zllll", 
-			&old_reg_zval, &left, &top, &right, &bottom) == FAILURE)
-		return;
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
-
-	old_reg = wingdi_region_object_get(old_reg_zval TSRMLS_CC);
-	obj_val = wingdi_region_object_new(old_reg->std.ce TSRMLS_CC);
-	new_reg = zend_object_store_get_object_by_handle(obj_val.handle TSRMLS_CC);
-	new_reg->region_handle = old_reg->region_handle;
-	/* Discard old object's handle - any attempts to use it will fale. */
-	old_reg->region_handle = NULL;
-
-	result = SetRectRgn(new_reg->region_handle, left, top, right, bottom);
-
-	RETURN_BOOL(result);
+	/** Not sure how to implement this.
+        Current thoughts are:
+        1) static method that returns a new obj, based on old object, and
+           nullify the object's region handle. Any attempts to use it there-
+           after will fail. But then the bool returned by SetRectRgn is not 
+           used.
+        2) static method that returns the boolean result of SetRectRgn. The 
+           method would take 2 objects, and perform similar operations on them
+           as 1.
+        3) the cleaner way would be to have an instance method and internally
+           change the type of the object (getThis()), but I'm not sure how to 
+           do that.
+    */
 }
+/* }}} */
 
 static const zend_function_entry wingdi_region_functions[] = {
 	ZEND_ME(WinGdiRegion, combine, arginfo_wingdi_region_combine, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
@@ -459,256 +422,6 @@ static const zend_function_entry wingdi_region_functions[] = {
 };
 
 /* ----------------------------------------------------------------
-  Win\Gdi\Region\Rectangle Userland API                                                    
-------------------------------------------------------------------*/
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_rect_region, 0, 0, 4)
-    ZEND_ARG_INFO(0, left)
-    ZEND_ARG_INFO(0, top)
-    ZEND_ARG_INFO(0, right)
-    ZEND_ARG_INFO(0, bottom)
-ZEND_END_ARG_INFO()
-
-PHP_METHOD(WinGdiRegionRect, __construct)
-{
-    zend_error_handling  error_handling;
-    wingdi_region_object *reg_obj;
-    int left, top,
-        right, bottom;
-
-    zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llll", &left, &top, &right, &bottom) == FAILURE)
-        return;
-    zend_restore_error_handling(&error_handling TSRMLS_CC);
-
-    reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
-    reg_obj->region_handle = CreateRectRgn(left, top, right, bottom);
-}
-
-static const zend_function_entry wingdi_region_rect_functions[] = {
-    PHP_ME(WinGdiRegionRect, __construct, arginfo_wingdi_rect_region, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    {NULL, NULL, NULL}
-};
-
-/* ----------------------------------------------------------------
-  Win\Gdi\Region\RoundedRectangle Userland API                                                    
-------------------------------------------------------------------*/
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_rounded_rect_region, 0, 0, 6)
-    ZEND_ARG_INFO(0, left)
-    ZEND_ARG_INFO(0, top)
-    ZEND_ARG_INFO(0, right)
-    ZEND_ARG_INFO(0, bottom)
-    ZEND_ARG_INFO(0, width)
-    ZEND_ARG_INFO(0, height)
-ZEND_END_ARG_INFO()
-
-PHP_METHOD(WinGdiRegionRoundedRect, __construct)
-{
-    zend_error_handling  error_handling;
-    wingdi_region_object *reg_obj;
-    int left, top,
-        right, bottom,
-        width, height;
-
-    zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llllll", 
-            &left, &top, &right, &bottom, &width, &height) == FAILURE)
-        return;
-    zend_restore_error_handling(&error_handling TSRMLS_CC);
-
-    reg_obj = (wingdi_region_object *)wingdi_region_object_get(getThis() TSRMLS_CC);
-    reg_obj->region_handle = CreateRoundRectRgn(left, top, right, bottom, width, height);
-    if (reg_obj->region_handle == NULL)
-    {
-        wingdi_create_error(GetLastError(), ce_wingdi_exception TSRMLS_CC);
-        return;
-    }
-}
-
-static const zend_function_entry wingdi_region_rounded_rect_functions[] = {
-    PHP_ME(WinGdiRegionRoundedRect, __construct, arginfo_wingdi_rounded_rect_region, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    {NULL, NULL, NULL}
-};
-
-/* ----------------------------------------------------------------
-  Win\Gdi\Region\Elliptic Userland API                                                    
-------------------------------------------------------------------*/
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_elliptic_region, 0, 0, 4)
-    ZEND_ARG_INFO(0, left)
-    ZEND_ARG_INFO(0, top)
-    ZEND_ARG_INFO(0, right)
-    ZEND_ARG_INFO(0, bottom)
-ZEND_END_ARG_INFO()
-
-PHP_METHOD(WinGdiRegionElliptic, __construct)
-{
-    zend_error_handling error_handling;
-    wingdi_region_object *reg_obj;
-    int left, top,
-        right, bottom;
-
-    zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llll", &left, &top, &right, &bottom) == FAILURE)
-        return;
-    zend_restore_error_handling(&error_handling TSRMLS_CC);
-
-    reg_obj = (wingdi_region_object *)wingdi_region_object_get(getThis() TSRMLS_CC);
-    reg_obj->region_handle = CreateEllipticRgn(left, top, right, bottom);
-    if (reg_obj->region_handle == NULL)
-    {
-        wingdi_create_error(GetLastError(), ce_wingdi_exception TSRMLS_CC);
-        return;
-    }
-}
-
-
-static const zend_function_entry wingdi_region_elliptic_functions[] = {
-    PHP_ME(WinGdiRegionElliptic, __construct, arginfo_wingdi_elliptic_region, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    {NULL, NULL, NULL}
-};
-
-/* ----------------------------------------------------------------
-  Win\Gdi\Region\Polygon Userland API                                                    
-------------------------------------------------------------------*/
-
-PHP_METHOD(WinGdiRegionPolygon, __construct)
-{
-    zend_error_handling  error_handling;
-    wingdi_region_object *reg_obj;
-    zval ***args, *arg, **ppzval, **xppzval, **yppzval;
-    POINT *points;
-    int narg = ZEND_NUM_ARGS(),
-        i = 0, n = 0, mode = ALTERNATE;
-
-    zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
-    if (narg > 1)
-    {
-        args = (zval ***)safe_emalloc(narg, sizeof(zval **), 0);
-        if (zend_get_parameters_array_ex(narg, args) == FAILURE)
-            /** Do we need to do an error here? */
-            efree(args);
-    }
-    else
-    {
-        if (zend_parse_parameters(narg TSRMLS_CC, "a|l", &arg, &mode) == FAILURE)
-            return;
-    }
-    zend_restore_error_handling(&error_handling TSRMLS_CC);
-
-    reg_obj = (wingdi_region_object *)wingdi_region_object_get(getThis() TSRMLS_CC);
-
-    if (narg > 1)
-    {
-        for (i = 0; i < narg; i++)
-        {
-        }
-    }
-    else
-    {
-        points = emalloc(narg * sizeof(POINT));
-        for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(arg));
-             zend_hash_has_more_elements(Z_ARRVAL_P(arg)) == SUCCESS;
-             zend_hash_move_forward(Z_ARRVAL_P(arg)))
-        {
-            if (zend_hash_get_current_data(Z_ARRVAL_P(arg), (void **)&ppzval) == FAILURE)
-                /** What to do here? */
-                continue;
-
-            /** If we do not have an array, give a warning and move onto next array. */
-            if (Z_TYPE_PP(ppzval) != IS_ARRAY) 
-            {
-                php_error_docref(NULL TSRMLS_CC, E_WARNING, 
-                    "expects an array of arrays."
-                    " At index %d something other than an array was given.",
-                    n++
-                );
-                continue;
-            }
-
-            if (zend_hash_index_exists(Z_ARRVAL_PP(ppzval), 0) &&
-                zend_hash_index_exists(Z_ARRVAL_PP(ppzval), 1))
-            {
-                zend_hash_index_find(Z_ARRVAL_PP(ppzval), 0, (void **)&xppzval);
-                zend_hash_index_find(Z_ARRVAL_PP(ppzval), 1, (void **)&yppzval);
-
-                if (Z_TYPE_PP(xppzval) != IS_LONG)
-                    convert_to_long(*xppzval);
-                if (Z_TYPE_PP(yppzval) != IS_LONG)
-                    convert_to_long(*yppzval);
-                
-                points[i].x = Z_LVAL_PP(xppzval);
-                points[i].y = Z_LVAL_PP(yppzval);
-                i++;
-            }
-            else
-            {
-                php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                    "expects an array with 2 integers.");
-                n++;
-                continue;
-            }
-            n++;
-        }
-        reg_obj->region_handle = CreatePolygonRgn(points, i + 1, mode);
-        if (reg_obj->region_handle == NULL)
-        {
-            wingdi_create_error(GetLastError(), ce_wingdi_exception TSRMLS_CC);
-            efree(points);
-            return;
-        }
-        efree(points);
-    }
-}
-
-PHP_METHOD(WinGdiRegionPolygon, getFillMode)
-{
-    zend_error_handling error_handling;
-    wingdi_displaycontext_object *dc_obj;
-    zval *dc_zval;
-    int mode;
-
-    zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &dc_zval) == FAILURE)
-        return;
-    zend_restore_error_handling(&error_handling TSRMLS_CC);
-
-    dc_obj = (wingdi_displaycontext_object *)wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
-    mode = GetPolyFillMode(dc_obj->hdc);
-    if (mode == 0)
-    {
-        wingdi_create_error(GetLastError(), ce_wingdi_exception TSRMLS_CC);
-        return;
-    }
-}
-PHP_METHOD(WinGdiRegionPolygon, setFillMode)
-{
-    zend_error_handling  error_handling;
-    wingdi_displaycontext_object *dc_obj;
-    zval *dc_zval;
-    int mode, result;
-
-    zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zl", &dc_zval, &mode) == FAILURE)
-        return;
-    zend_restore_error_handling(&error_handling TSRMLS_CC);
-
-    dc_obj = (wingdi_displaycontext_object *)wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
-    result = SetPolyFillMode(dc_obj->hdc, mode);
-    if (result == 0)
-    {
-        wingdi_create_error(GetLastError(), ce_wingdi_exception TSRMLS_CC);
-        return;
-    }
-}
-static const zend_function_entry wingdi_region_polygon_functions[] = {
-    PHP_ME(WinGdiRegionPolygon, __construct, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    PHP_ME(WinGdiRegionPolygon, setFillMode, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
-    {NULL, NULL, NULL}
-};
-
-/* ----------------------------------------------------------------
   Win\Gdi\Region LifeCycle Functions                                                    
 ------------------------------------------------------------------*/
 
@@ -721,25 +434,10 @@ PHP_MINIT_FUNCTION(wingdi_region)
 	ce_wingdi_region = zend_register_internal_class(&ce TSRMLS_CC);
 	ce_wingdi_region->create_object = wingdi_region_object_new;
 
-    INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_REGION_NS, "Rectangle", wingdi_region_rect_functions);
-    ce_wingdi_rect_region = 
-        zend_register_internal_class_ex(&ce, ce_wingdi_region, PHP_WINGDI_REGION_NS TSRMLS_CC);
-    ce_wingdi_rect_region->create_object = wingdi_region_object_new;
-
-    INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_REGION_NS, "RoundedRectangle", wingdi_region_rounded_rect_functions);
-    ce_wingdi_round_region =
-        zend_register_internal_class_ex(&ce, ce_wingdi_region, PHP_WINGDI_REGION_NS TSRMLS_CC);
-    ce_wingdi_round_region->create_object = wingdi_region_object_new;
-
-    INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_REGION_NS, "Elliptic", wingdi_region_elliptic_functions);
-    ce_wingdi_elliptic_region = 
-        zend_register_internal_class_ex(&ce, ce_wingdi_region, PHP_WINGDI_REGION_NS TSRMLS_CC);
-    ce_wingdi_elliptic_region->create_object = wingdi_region_object_new;
-
-    INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_REGION_NS, "Polygon", wingdi_region_polygon_functions);
-    ce_wingdi_polygon_region =
-        zend_register_internal_class_ex(&ce, ce_wingdi_region, PHP_WINGDI_REGION_NS TSRMLS_CC);
-    ce_wingdi_polygon_region->create_object = wingdi_region_object_new;
+    PHP_MINIT(wingdi_region_rectangle)(INIT_FUNC_ARGS_PASSTHRU);
+    PHP_MINIT(wingdi_region_roundedrectangle)(INIT_FUNC_ARGS_PASSTHRU);
+    PHP_MINIT(wingdi_region_elliptic)(INIT_FUNC_ARGS_PASSTHRU);
+    PHP_MINIT(wingdi_region_polygon)(INIT_FUNC_ARGS_PASSTHRU);
 
 	return SUCCESS;
 }

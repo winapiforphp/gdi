@@ -48,6 +48,14 @@
 #define PHP_WINGDI_PEN_NS            ZEND_NS_NAME(PHP_WINGDI_NS, "Pen")
 #define PHP_WINGDI_REGION_NS         ZEND_NS_NAME(PHP_WINGDI_NS, "Region")
 
+/** Shortens the amount of typing needed, a little */
+#define WINGDI_ERROR_HANDLING() \
+    zend_error_handling error_handling; \
+    zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC); 
+
+#define WINGDI_RESTORE_ERRORS() \
+    zend_restore_error_handling(&error_handling TSRMLS_CC);
+
 /* ----------------------------------------------------------------
   Typedefs                                               
 ------------------------------------------------------------------*/
@@ -85,6 +93,7 @@ typedef struct _wingdi_region_object {
   C API                                             
 ------------------------------------------------------------------*/
 void wingdi_create_error(int error, zend_class_entry *ce TSRMLS_DC);
+zend_object_value wingdi_region_object_new(zend_class_entry *ce TSRMLS_DC);
 
 static inline wingdi_bitmap_object * wingdi_bitmap_object_get(zval * zobj TSRMLS_DC)
 {
@@ -154,6 +163,7 @@ static inline wingdi_region_object * wingdi_region_object_get(zval * zobj TSRMLS
 extern zend_class_entry *ce_wingdi_exception;
 extern zend_class_entry *ce_wingdi_argexception;
 extern zend_class_entry *ce_wingdi_versionexception;
+extern zend_class_entry *ce_wingdi_region;
 
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking                                                
@@ -167,6 +177,10 @@ PHP_MINIT_FUNCTION(wingdi_color);
 PHP_MINIT_FUNCTION(wingdi_displaycontext);
 PHP_MINIT_FUNCTION(wingdi_pen);
 PHP_MINIT_FUNCTION(wingdi_region);
+PHP_MINIT_FUNCTION(wingdi_region_rectangle);
+PHP_MINIT_FUNCTION(wingdi_region_roundedrectangle);
+PHP_MINIT_FUNCTION(wingdi_region_elliptic);
+PHP_MINIT_FUNCTION(wingdi_region_polygon);
 
 /* Required for static linking */
 extern zend_module_entry wingdi_module_entry;

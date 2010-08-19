@@ -13,6 +13,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Author: Elizabeth M. Smith <auroraeosrose@php.net>                   |
+  |         Mark G. Skilbeck   <markskilbeck@php.net>                    |
   +----------------------------------------------------------------------+
 */
 
@@ -35,7 +36,6 @@ zend_object_handlers wingdi_displaycontext_object_handlers;
  */
 PHP_METHOD(WinGdiDisplayContext, __construct)
 {
-	zend_error_handling error_handling;
 	LPCTSTR drivername = "DISPLAY";
 	LPCTSTR devicename = NULL;
 	//const DEVMODE *lpInitData - todo - allow settings
@@ -44,20 +44,18 @@ PHP_METHOD(WinGdiDisplayContext, __construct)
 	zval *object = getThis();
 	wingdi_displaycontext_object *context_object = (wingdi_displaycontext_object*)zend_objects_get_address(object TSRMLS_CC);
 
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
-
+	WINGDI_ERROR_HANDLING()
 	/* default is to create a DC for "DISPLAY" */
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &drivername, &drivername_len) == FAILURE) {
 		return;
 	}
+    WINGDI_RESTORE_ERRORS()
 
 	/* TODO: support DEVMODE struct as settings array */
 	context_object->hdc = CreateDC(drivername, devicename, NULL, NULL);
 	if (context_object->hdc == NULL) {
 		zend_throw_exception(ce_wingdi_exception, "Error creating device context", 0 TSRMLS_CC);
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
-
 }
 /* }}} */
 
@@ -69,14 +67,13 @@ PHP_METHOD(WinGdiDisplayContext, __construct)
  */
 PHP_METHOD(WinGdiDisplayContext, get)
 {
-	zend_error_handling error_handling;
 	HDC hdc = NULL;
 	HWND window_handle = NULL;
 	HRGN clip_region = NULL;
 	DWORD flags = 0;
 	wingdi_displaycontext_object *display_object;
 
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+	WINGDI_ERROR_HANDLING()
 
 	/* Passing no parameters or null is fine, you get the desktop, otherwise get a window handle */
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
@@ -95,7 +92,7 @@ PHP_METHOD(WinGdiDisplayContext, get)
 		display_object = (wingdi_displaycontext_object*)zend_objects_get_address(return_value TSRMLS_CC);
 		display_object->hdc = hdc;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	WINGDI_RESTORE_ERRORS()
 }
 /* }}} */
 

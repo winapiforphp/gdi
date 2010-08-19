@@ -3,3 +3,22 @@ Region API:
  - Add constants in a clean and intelligent manner
  - Finish PolyPolygon implementation and clean up Polygon implementation (ugly).
  - General tidying up.
+ - Split region classes into their own file
+ - Write tests
+ - implement Region\setRectangle 
+ 
+Bitmap API:
+ - Lots!
+
+Brush API:
+ - Lots!
+ 
+Color API:
+ - Bits and Bobs!
+ 
+DisplayDevice API:
+ - Update code from DisplayContext -> DeviceContext
+ - Lots!
+ 
+Pen API:
+ - Lots!

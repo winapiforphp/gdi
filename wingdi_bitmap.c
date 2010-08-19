@@ -41,17 +41,16 @@ ZEND_END_ARG_INFO()
 	   PHP streams, a version switching out on createbitmap could be used at some point */
 PHP_METHOD(WinGdiBitmap, load)
 {
-	zend_error_handling error_handling;
 	HANDLE bitmap;
 	char * filename;
 	int width = 0, height = 0, type = LR_LOADFROMFILE, str_len;
 	wingdi_bitmap_object *bitmap_object;
 
-	zend_replace_error_handling(EH_THROW, ce_wingdi_argexception, &error_handling TSRMLS_CC);
+    WINGDI_ERROR_HANDLING()
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|ll", &filename, &str_len, &width, &height) == FAILURE) {
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+    WINGDI_RESTORE_ERRORS()
 
 	/* if width and height are 0, we assume you want default */
 	if (width == 0 && height == 0) {
