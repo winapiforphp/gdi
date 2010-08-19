@@ -219,6 +219,32 @@ PHP_METHOD(WinGdiRegion, fill)
 }
 /* }}} */
 
+/* {{{ proto bool Win\Gdi\Region->frame(Win\Gdi\DeviceContext dc, Win\Gdi\Brush brush, int width, int height)
+       Draws a border around specified region using the specified brush
+*/
+PHP_METHOD(WinGdiRegion, frame)
+{
+    wingdi_displaycontext_object *dc_obj;
+    wingdi_region_object *reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
+    wingdi_brush_object  *br_obj;
+    zval *dc_zval,
+         *br_zval;
+    BOOL result;
+    int width, 
+        height;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zzll", &dc_obj, &br_zval, &width, &height) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    dc_obj = wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
+    br_obj = wingdi_brush_object_get(br_zval TSRMLS_CC);
+    
+    result = FrameRgn(dc_obj->hdc, reg_obj->region_handle, br_obj->brush_handle, width, height);
+    RETURN_BOOL(result);
+}
+
 /* {{{ proto array Win\Gdi\Region->getBox()
 	   Returns an array of the LPRECT data associated with the region.
 */
