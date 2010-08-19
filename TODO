@@ -1,6 +1,5 @@
 Region API:
  - Add method documentation
- - Add constants in a clean and intelligent manner
  - General tidying up.
  - Write tests
  - implement Region\setRectangle 
