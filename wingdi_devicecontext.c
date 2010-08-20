@@ -22,19 +22,19 @@
 #include "php_wingdi.h"
 #include "zend_exceptions.h" 
 
-zend_class_entry *ce_WinGdiDisplayContext; 
-zend_object_handlers wingdi_displaycontext_object_handlers;
+zend_class_entry *ce_WinGdiDeviceContext; 
+zend_object_handlers wingdi_devicecontext_object_handlers;
 
 /* ----------------------------------------------------------------
-  \Win\Gdi\DisplayContext Userland API                                                      
+  \Win\Gdi\DeviceContext Userland API                                                      
 ------------------------------------------------------------------*/
 
-/* {{{ proto int \Win\Gdi\DisplayContext->construct([string devicename])
+/* {{{ proto int \Win\Gdi\DeviceContext->construct([string devicename])
        Creates a new display context.
 
 	   Returns true on success, false on failure
  */
-PHP_METHOD(WinGdiDisplayContext, __construct)
+PHP_METHOD(WinGdiDeviceContext, __construct)
 {
 	LPCTSTR drivername = "DISPLAY";
 	LPCTSTR devicename = NULL;
@@ -42,7 +42,7 @@ PHP_METHOD(WinGdiDisplayContext, __construct)
 	int drivername_len;
 
 	zval *object = getThis();
-	wingdi_displaycontext_object *context_object = (wingdi_displaycontext_object*)zend_objects_get_address(object TSRMLS_CC);
+	wingdi_devicecontext_object *context_object = (wingdi_devicecontext_object*)zend_objects_get_address(object TSRMLS_CC);
 
 	WINGDI_ERROR_HANDLING()
 	/* default is to create a DC for "DISPLAY" */
@@ -59,19 +59,19 @@ PHP_METHOD(WinGdiDisplayContext, __construct)
 }
 /* }}} */
 
-/* {{{ proto \Win\Gdi\DisplayContext object \Win\Gdi\DisplayContext::get([object window])
+/* {{{ proto \Win\Gdi\DeviceContext object \Win\Gdi\DeviceContext::get([object window])
        Retrieves the display context for a specified window.
 
-	   This is basically a static constructor for DisplayContext that retrieves an existing
+	   This is basically a static constructor for DeviceContext that retrieves an existing
 	   DC instead of creating a new one from scratch.
  */
-PHP_METHOD(WinGdiDisplayContext, get)
+PHP_METHOD(WinGdiDeviceContext, get)
 {
 	HDC hdc = NULL;
 	HWND window_handle = NULL;
 	HRGN clip_region = NULL;
 	DWORD flags = 0;
-	wingdi_displaycontext_object *display_object;
+	wingdi_devicecontext_object *display_object;
 
 	WINGDI_ERROR_HANDLING()
 
@@ -86,25 +86,25 @@ PHP_METHOD(WinGdiDisplayContext, get)
 		zend_throw_exception(ce_wingdi_argexception, "Error retrieving device context", 0 TSRMLS_CC);
 	} else {
 		/* Make our object a pretty return value */
-		object_init_ex(return_value, ce_WinGdiDisplayContext); 
+		object_init_ex(return_value, ce_WinGdiDeviceContext); 
 		Z_SET_REFCOUNT_P(return_value, 1);
 		Z_UNSET_ISREF_P(return_value); 
-		display_object = (wingdi_displaycontext_object*)zend_objects_get_address(return_value TSRMLS_CC);
+		display_object = (wingdi_devicecontext_object*)zend_objects_get_address(return_value TSRMLS_CC);
 		display_object->hdc = hdc;
 	}
 	WINGDI_RESTORE_ERRORS()
 }
 /* }}} */
 
-/* {{{ proto int \Win\Gdi\DisplayContext->cancel()
+/* {{{ proto int \Win\Gdi\DeviceContext->cancel()
        Cancels any pending operation on the specified device context.
 
 	   Returns true on success, false on failure
  */
-PHP_METHOD(WinGdiDisplayContext, cancel)
+PHP_METHOD(WinGdiDeviceContext, cancel)
 {
 	zval *object = getThis();
-	wingdi_displaycontext_object *context_object = (wingdi_displaycontext_object*)wingdi_displaycontext_object_get(object TSRMLS_CC);
+	wingdi_devicecontext_object *context_object = (wingdi_devicecontext_object*)wingdi_devicecontext_object_get(object TSRMLS_CC);
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
@@ -114,18 +114,18 @@ PHP_METHOD(WinGdiDisplayContext, cancel)
 }
 /* }}} */
 
-/* {{{ proto int \Win\Gdi\DisplayContext->save()
+/* {{{ proto int \Win\Gdi\DeviceContext->save()
        Saves the current state of the device context by copying
 	   selected objects and graphic modes to a context stack.
 
 	   Returns false on failure, or an integer of the save location
 	   on the stack on success.
  */
-PHP_METHOD(WinGdiDisplayContext, save)
+PHP_METHOD(WinGdiDeviceContext, save)
 {
 	int worked;
 	zval *object = getThis();
-	wingdi_displaycontext_object *context_object = (wingdi_displaycontext_object*)wingdi_displaycontext_object_get(object TSRMLS_CC);
+	wingdi_devicecontext_object *context_object = (wingdi_devicecontext_object*)wingdi_devicecontext_object_get(object TSRMLS_CC);
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
@@ -140,22 +140,22 @@ PHP_METHOD(WinGdiDisplayContext, save)
 }
 /* }}} */
 
-/* {{{ proto int \Win\Gdi\DisplayContext->restore([int savedstate])
+/* {{{ proto int \Win\Gdi\DeviceContext->restore([int savedstate])
        Restores a device context to the specified state.
 
 	   If no parameter is provided, the last state will be "popped off" the stack.
 	   If a negative parameter is provided, that number of states will be popped off.
 	   If a positive number is provided, it is expected to be one of the numbers provided
-	   by a call to DisplayContext->save(); and all saves before that number will
+	   by a call to DeviceContext->save(); and all saves before that number will
 	   be popped off.
 
 	   Returns true on success, false on failure
  */
-PHP_METHOD(WinGdiDisplayContext, restore)
+PHP_METHOD(WinGdiDeviceContext, restore)
 {
 	long savedstate = -1;
 	zval *object = getThis();
-	wingdi_displaycontext_object *context_object = (wingdi_displaycontext_object*)wingdi_displaycontext_object_get(object TSRMLS_CC);
+	wingdi_devicecontext_object *context_object = (wingdi_devicecontext_object*)wingdi_devicecontext_object_get(object TSRMLS_CC);
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &savedstate) == FAILURE) {
 		return;
@@ -172,32 +172,32 @@ PHP_METHOD(WinGdiDisplayContext, restore)
 /* }}} */
 
 /* {{{ Method definitions */
-ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_displaycontext___construct, 0, 0, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_devicecontext___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, devicename)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_displaycontext_restore, 0, 0, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_devicecontext_restore, 0, 0, 0)
 	ZEND_ARG_INFO(0, savedstate)
 ZEND_END_ARG_INFO()
 
-static const zend_function_entry wingdi_displaycontext_functions[] = {
-	PHP_ME(WinGdiDisplayContext, __construct, arginfo_wingdi_displaycontext___construct, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-	PHP_ME(WinGdiDisplayContext, get, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
-	PHP_ME(WinGdiDisplayContext, cancel, NULL, ZEND_ACC_PUBLIC)
-	PHP_ME(WinGdiDisplayContext, save, NULL, ZEND_ACC_PUBLIC)
-	PHP_ME(WinGdiDisplayContext, restore, arginfo_wingdi_displaycontext_restore, ZEND_ACC_PUBLIC)
+static const zend_function_entry wingdi_devicecontext_functions[] = {
+	PHP_ME(WinGdiDeviceContext, __construct, arginfo_wingdi_devicecontext___construct, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
+	PHP_ME(WinGdiDeviceContext, get, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+	PHP_ME(WinGdiDeviceContext, cancel, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(WinGdiDeviceContext, save, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(WinGdiDeviceContext, restore, arginfo_wingdi_devicecontext_restore, ZEND_ACC_PUBLIC)
 	{NULL, NULL, NULL}
 };
 /* }}} */
 
 /* ----------------------------------------------------------------
-  \Win\Gdi\DisplayContext Custom Object handlers                                                 
+  \Win\Gdi\DeviceContext Custom Object handlers                                                 
 ------------------------------------------------------------------*/
 
-/* {{{ wingdi_displaycontext_free_storage
+/* {{{ wingdi_devicecontext_free_storage
        if the hdc was done with CreateDC then DeleteDC is used
 	   if the hdc was done with GetDC then ReleaseDC is used */
-void wingdi_displaycontext_free_storage(wingdi_displaycontext_object *intern TSRMLS_DC)
+void wingdi_devicecontext_free_storage(wingdi_devicecontext_object *intern TSRMLS_DC)
 {
 	if(intern->hdc && intern->window_handle) {
 		ReleaseDC(intern->window_handle, intern->hdc);
@@ -219,15 +219,15 @@ void wingdi_displaycontext_free_storage(wingdi_displaycontext_object *intern TSR
 
 /* }}} */
 
-/* {{{ wingdi_displaycontext_object_new
-       creates a new wingdi_displaycontext object and takes care of the internal junk */
-zend_object_value wingdi_displaycontext_object_new(zend_class_entry *ce TSRMLS_DC)
+/* {{{ wingdi_devicecontext_object_new
+       creates a new wingdi_devicecontext object and takes care of the internal junk */
+zend_object_value wingdi_devicecontext_object_new(zend_class_entry *ce TSRMLS_DC)
 {
 	zend_object_value retval;
-	wingdi_displaycontext_object *object;
+	wingdi_devicecontext_object *object;
 	zval *tmp;
 
-	object = emalloc(sizeof(wingdi_displaycontext_object));
+	object = emalloc(sizeof(wingdi_devicecontext_object));
 	object->std.ce = ce;
 	object->std.guards = NULL;
 	object->hdc = NULL;
@@ -237,28 +237,28 @@ zend_object_value wingdi_displaycontext_object_new(zend_class_entry *ce TSRMLS_D
 	zend_hash_init(object->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
 	zend_hash_copy(object->std.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
 
-	retval.handle = zend_objects_store_put(object, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t) wingdi_displaycontext_free_storage, NULL TSRMLS_CC);
+	retval.handle = zend_objects_store_put(object, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t) wingdi_devicecontext_free_storage, NULL TSRMLS_CC);
 	object->handle = retval.handle;
-	retval.handlers = &wingdi_displaycontext_object_handlers;
+	retval.handlers = &wingdi_devicecontext_object_handlers;
 	return retval;
 }
 /* }}} */
 
 /* ----------------------------------------------------------------
-  \Win\Gdi\DisplayContext LifeCycle Functions                                                    
+  \Win\Gdi\DeviceContext LifeCycle Functions                                                    
 ------------------------------------------------------------------*/
 
-/* {{{ PHP_MINIT_FUNCTION(wingdi_displaycontext)
-	Registers the \Win\Gdi\DisplayContext class
+/* {{{ PHP_MINIT_FUNCTION(wingdi_devicecontext)
+	Registers the \Win\Gdi\DeviceContext class
  */
-PHP_MINIT_FUNCTION(wingdi_displaycontext)
+PHP_MINIT_FUNCTION(wingdi_devicecontext)
 {
 	zend_class_entry ce;
-	memcpy(&wingdi_displaycontext_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+	memcpy(&wingdi_devicecontext_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-	INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_NS, "DisplayContext", wingdi_displaycontext_functions);
-	ce_WinGdiDisplayContext = zend_register_internal_class(&ce TSRMLS_CC);
-	ce_WinGdiDisplayContext->create_object  = wingdi_displaycontext_object_new;
+	INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_NS, "DeviceContext", wingdi_devicecontext_functions);
+	ce_WinGdiDeviceContext = zend_register_internal_class(&ce TSRMLS_CC);
+	ce_WinGdiDeviceContext->create_object  = wingdi_devicecontext_object_new;
 
 	//zend_declare_property_long(ce_WinGdiColor, "red", sizeof("red") - 1, 0, ZEND_ACC_PUBLIC TSRMLS_CC);
 	//zend_declare_property_long(ce_WinGdiColor, "green", sizeof("green") - 1, 0, ZEND_ACC_PUBLIC TSRMLS_CC);

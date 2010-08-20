@@ -44,7 +44,7 @@
 #define PHP_WINGDI_BITMAP_NS         ZEND_NS_NAME(PHP_WINGDI_NS, "Bitmap")
 #define PHP_WINGDI_BRUSH_NS          ZEND_NS_NAME(PHP_WINGDI_NS, "Brush")
 #define PHP_WINGDI_COLOR_NS          ZEND_NS_NAME(PHP_WINGDI_NS, "Color")
-#define PHP_WINGDI_DISPLAYCONTEXT_NS ZEND_NS_NAME(PHP_WINGDI_NS, "DisplayContext")
+#define PHP_WINGDI_DISPLAYCONTEXT_NS ZEND_NS_NAME(PHP_WINGDI_NS, "DeviceContext")
 #define PHP_WINGDI_PEN_NS            ZEND_NS_NAME(PHP_WINGDI_NS, "Pen")
 #define PHP_WINGDI_REGION_NS         ZEND_NS_NAME(PHP_WINGDI_NS, "Region")
 #define PHP_WINGDI_REGION_POLY_NS    ZEND_NS_NAME(PHP_WINGDI_REGION_NS, "Polygon")
@@ -62,13 +62,13 @@
 ------------------------------------------------------------------*/
 
 /* Class structs */
-typedef struct _wingdi_displaycontext_object {
+typedef struct _wingdi_devicecontext_object {
 	zend_object  std;
 	HDC hdc;
 	HWND window_handle;
 	//HashTable *prop_handler;
 	zend_object_handle handle;
-} wingdi_displaycontext_object;
+} wingdi_devicecontext_object;
 
 typedef struct _wingdi_brush_object {
 	zend_object  std;
@@ -127,12 +127,12 @@ static inline wingdi_color_object * wingdi_color_object_get(zval * zobj TSRMLS_D
 }
 */
 
-static inline wingdi_displaycontext_object * wingdi_displaycontext_object_get(zval * zobj TSRMLS_DC)
+static inline wingdi_devicecontext_object * wingdi_devicecontext_object_get(zval * zobj TSRMLS_DC)
 {
-	wingdi_displaycontext_object * obj = zend_object_store_get_object(zobj TSRMLS_CC);
+	wingdi_devicecontext_object * obj = zend_object_store_get_object(zobj TSRMLS_CC);
     if (obj->hdc == NULL) 
     {
-        php_error(E_ERROR, "Internal display context handle missing in %s class, you must call parent::__construct() in extending classes", Z_OBJ_CLASS_NAME_P(zobj));
+        php_error(E_ERROR, "Internal device context handle missing in %s class, you must call parent::__construct() in extending classes", Z_OBJ_CLASS_NAME_P(zobj));
         return NULL;
     }
 	return obj;
@@ -175,7 +175,7 @@ PHP_MINIT_FUNCTION(wingdi_util);
 PHP_MINIT_FUNCTION(wingdi_bitmap);
 PHP_MINIT_FUNCTION(wingdi_brush);
 PHP_MINIT_FUNCTION(wingdi_color);
-PHP_MINIT_FUNCTION(wingdi_displaycontext);
+PHP_MINIT_FUNCTION(wingdi_devicecontext);
 PHP_MINIT_FUNCTION(wingdi_pen);
 PHP_MINIT_FUNCTION(wingdi_region);
 PHP_MINIT_FUNCTION(wingdi_region_rectangle);

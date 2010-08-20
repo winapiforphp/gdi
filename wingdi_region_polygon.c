@@ -165,7 +165,7 @@ CLEANUP:
 */
 PHP_METHOD(WinGdiRegionPolygon, getFillMode)
 {
-    wingdi_displaycontext_object *dc_obj;
+    wingdi_devicecontext_object *dc_obj;
     zval *dc_zval;
     int mode;
 
@@ -174,7 +174,7 @@ PHP_METHOD(WinGdiRegionPolygon, getFillMode)
         return;
     WINGDI_RESTORE_ERRORS()
 
-    dc_obj = (wingdi_displaycontext_object *)wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
+    dc_obj = (wingdi_devicecontext_object *)wingdi_devicecontext_object_get(dc_zval TSRMLS_CC);
     mode = GetPolyFillMode(dc_obj->hdc);
     if (mode == 0)
     {
@@ -190,7 +190,7 @@ PHP_METHOD(WinGdiRegionPolygon, getFillMode)
 */
 PHP_METHOD(WinGdiRegionPolygon, setFillMode)
 {
-    wingdi_displaycontext_object *dc_obj;
+    wingdi_devicecontext_object *dc_obj;
     zval *dc_zval;
     int mode, result;
 
@@ -199,7 +199,7 @@ PHP_METHOD(WinGdiRegionPolygon, setFillMode)
         return;
     WINGDI_RESTORE_ERRORS()
 
-    dc_obj = (wingdi_displaycontext_object *)wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
+    dc_obj = (wingdi_devicecontext_object *)wingdi_devicecontext_object_get(dc_zval TSRMLS_CC);
     result = SetPolyFillMode(dc_obj->hdc, mode);
     if (result == 0)
     {

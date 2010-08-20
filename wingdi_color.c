@@ -136,7 +136,7 @@ static const zend_function_entry wingdi_color_functions[] = {
 /* }}} */
 
 /* ----------------------------------------------------------------
-  \Win\Gdi\DisplayContext Custom Object handlers                                                 
+  \Win\Gdi\DeviceContext Custom Object handlers                                                 
 ------------------------------------------------------------------*/
 
 /* {{{ wingdi_color_object_new

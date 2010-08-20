@@ -97,7 +97,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_region_equal, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_region_fill, 0, 0, 3)
-	ZEND_ARG_OBJ_INFO(1, display_context, Win\\Gdi\\DisplayContext, 0)
+	ZEND_ARG_OBJ_INFO(1, display_context, Win\\Gdi\\DeviceContext, 0)
 	ZEND_ARG_OBJ_INFO(1, region, Win\\Gdi\\Region, 0)
 	ZEND_ARG_OBJ_INFO(1, brush, Win\\Gdi\\Brush, 0)
 ZEND_END_ARG_INFO()
@@ -106,14 +106,14 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_region_get_box, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_region_frame, 0, 0, 4)
-	ZEND_ARG_OBJ_INFO(1, display_context, Win\\Gdi\\DisplayContext, 0)
+	ZEND_ARG_OBJ_INFO(1, display_context, Win\\Gdi\\DeviceContext, 0)
 	ZEND_ARG_OBJ_INFO(1, brush, Win\\Gdi\\Brush, 0)
 	ZEND_ARG_INFO(0, width)
 	ZEND_ARG_INFO(0, height)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_region_invert, 0, 0, 1)
-	ZEND_ARG_OBJ_INFO(1, display_context, Win\\Gdi\\DisplayContext, 0)
+	ZEND_ARG_OBJ_INFO(1, display_context, Win\\Gdi\\DeviceContext, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_region_offset, 0, 0, 2)
@@ -122,7 +122,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_region_offset, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_region_paint, 0, 0, 1)
-	ZEND_ARG_OBJ_INFO(1, display_context, Win\\Gdi\\DisplayContext, 0)
+	ZEND_ARG_OBJ_INFO(1, display_context, Win\\Gdi\\DeviceContext, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_region_point_in, 0, 0, 2)
@@ -194,12 +194,12 @@ PHP_METHOD(WinGdiRegion, combine)
 }
 /* }}} */
 
-/* {{{ proto bool Win\Gdi\Region->fill(Win\Gdi\DisplayContext dc, Win\Gdi\Brush brush)
+/* {{{ proto bool Win\Gdi\Region->fill(Win\Gdi\DeviceContext dc, Win\Gdi\Brush brush)
 	   Fills a region, using the specified brush.
 */
 PHP_METHOD(WinGdiRegion, fill)
 {
-	wingdi_displaycontext_object *dc_obj;
+	wingdi_devicecontext_object *dc_obj;
 	wingdi_region_object *reg_obj;
 	wingdi_brush_object  *brush_obj;
 		zval *dc_zval,
@@ -211,7 +211,7 @@ PHP_METHOD(WinGdiRegion, fill)
 		return;
 	WINGDI_RESTORE_ERRORS()
 
-	dc_obj    = wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
+	dc_obj    = wingdi_devicecontext_object_get(dc_zval TSRMLS_CC);
 	reg_obj   = wingdi_region_object_get(getThis() TSRMLS_CC);
 	brush_obj = wingdi_brush_object_get(brush_zval TSRMLS_CC);
 
@@ -226,7 +226,7 @@ PHP_METHOD(WinGdiRegion, fill)
 */
 PHP_METHOD(WinGdiRegion, frame)
 {
-    wingdi_displaycontext_object *dc_obj;
+    wingdi_devicecontext_object *dc_obj;
     wingdi_region_object *reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
     wingdi_brush_object  *br_obj;
     zval *dc_zval,
@@ -240,7 +240,7 @@ PHP_METHOD(WinGdiRegion, frame)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    dc_obj = wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(dc_zval TSRMLS_CC);
     br_obj = wingdi_brush_object_get(br_zval TSRMLS_CC);
     
     result = FrameRgn(dc_obj->hdc, reg_obj->region_handle, br_obj->brush_handle, width, height);
@@ -286,7 +286,7 @@ PHP_METHOD(WinGdiRegion, getBox)
 PHP_METHOD(WinGdiRegion, invert)
 {
 		wingdi_region_object *reg_obj;
-	wingdi_displaycontext_object *dc_obj;
+	wingdi_devicecontext_object *dc_obj;
 	zval *dc_zval;
 	BOOL result;
 
@@ -296,7 +296,7 @@ PHP_METHOD(WinGdiRegion, invert)
 	WINGDI_RESTORE_ERRORS()
 
 	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
-	dc_obj  = wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
+	dc_obj  = wingdi_devicecontext_object_get(dc_zval TSRMLS_CC);
 
 	result = InvertRgn(dc_obj->hdc, reg_obj->region_handle);
 
@@ -339,7 +339,7 @@ PHP_METHOD(WinGdiRegion, offset)
 PHP_METHOD(WinGdiRegion, paint)
 {
 		wingdi_region_object *reg_obj;
-	wingdi_displaycontext_object *dc_obj;
+	wingdi_devicecontext_object *dc_obj;
 	zval *dc_zval;
 	BOOL result;
 
@@ -349,7 +349,7 @@ PHP_METHOD(WinGdiRegion, paint)
 	WINGDI_RESTORE_ERRORS()
 
 	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
-	dc_obj  = wingdi_displaycontext_object_get(dc_zval TSRMLS_CC);
+	dc_obj  = wingdi_devicecontext_object_get(dc_zval TSRMLS_CC);
 
 	result = PaintRgn(dc_obj->hdc, reg_obj->region_handle);
 

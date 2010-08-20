@@ -14,7 +14,6 @@ Color API:
  - Bits and Bobs!
  
 DisplayDevice API:
- - Update code from DisplayContext -> DeviceContext
  - Lots!
  
 Pen API:
