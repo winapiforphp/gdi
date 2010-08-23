@@ -84,6 +84,11 @@ typedef struct _wingdi_bitmap_object {
 	zend_object_handle handle;
 } wingdi_bitmap_object;
 
+typedef struct _wingdi_path_object {
+    zend_object std;
+    zend_object_handle handle;
+} wingdi_path_object;
+
 typedef struct _wingdi_region_object {
 	zend_object std;
 	HRGN		region_handle;
@@ -165,6 +170,7 @@ extern zend_class_entry *ce_wingdi_exception;
 extern zend_class_entry *ce_wingdi_argexception;
 extern zend_class_entry *ce_wingdi_versionexception;
 extern zend_class_entry *ce_wingdi_region;
+extern zend_class_entry *ce_wingdi_path;
 
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking                                                
@@ -177,6 +183,7 @@ PHP_MINIT_FUNCTION(wingdi_brush);
 PHP_MINIT_FUNCTION(wingdi_color);
 PHP_MINIT_FUNCTION(wingdi_devicecontext);
 PHP_MINIT_FUNCTION(wingdi_pen);
+PHP_MINIT_FUNCTION(wingdi_path);
 PHP_MINIT_FUNCTION(wingdi_region);
 PHP_MINIT_FUNCTION(wingdi_region_rectangle);
 PHP_MINIT_FUNCTION(wingdi_region_roundedrectangle);
