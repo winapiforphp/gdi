@@ -27,9 +27,15 @@ zend_class_entry *ce_wingdi_path;
   Win\Gdi\Bitmap Userland API
 ------------------------------------------------------------------*/
 
+// These are the path functions listed here:
+// http://msdn.microsoft.com/en-us/library/dd162782(v=VS.85).aspx
+// The path stuff is a bit scattered (lines & curves, filled shapes,
+// and other stuff), however, unless a cleaner implementation occurs
+// to me, they'll all be under one class, which seems to make sense.
+
 PHP_METHOD(WinGdiPath, __construct)
 {
-    wingdi_path_object *path_obj;
+    wingdi_path_object *path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
     wingdi_devicecontext_object *dc_obj;
     zval *dc_zval;
     BOOL result;
@@ -44,10 +50,228 @@ PHP_METHOD(WinGdiPath, __construct)
     // Is this the correct way to handle this error?
     if (result == 0)
         zend_throw_exception(ce_wingdi_exception, "error creating path", 0 TSRMLS_CC);
+    path_obj->device_context = dc_zval;
+    Z_ADDREF_P(dc_zval);
 }
+
+PHP_METHOD(WinGdiPath, abort)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters_none() == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    RETURN_BOOL(AbortPath(dc_obj->hdc));
+}
+
+PHP_METHOD(WinGdiPath, closeFigure)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters_none() == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    RETURN_BOOL(CloseFigure(dc_obj->hdc));
+}
+
+PHP_METHOD(WinGdiPath, fillPath)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters_none() == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    RETURN_BOOL(FillPath(dc_obj->hdc));
+}
+
+PHP_METHOD(WinGdiPath, flattenPath)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters_none() == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    RETURN_BOOL(FlattenPath(dc_obj->hdc));
+}
+
+PHP_METHOD(WinGdiPath, getMiterLimit)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    FLOAT limit;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters_none() == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    RETURN_DOUBLE(GetMiterLimit(dc_obj->hdc, (PFLOAT)&limit));
+}
+
+PHP_METHOD(WinGdiPath, getPath)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    LPPOINT points;
+    LPBYTE  types;
+    zval *point_array;
+    int result, i,
+        points_total = 0;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters_none() == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj   = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    // Determine how many points exist in the path
+    points_total = GetPath(dc_obj->hdc, NULL, NULL, 0);
+    points = emalloc(sizeof(POINT) * points_total);
+    types  = emalloc(sizeof(BYTE) * points_total);
+    result = GetPath(dc_obj->hdc, points, types, points_total);
+
+    array_init(return_value);
+    for (i = 0; i < points_total; i++)
+    {
+        MAKE_STD_ZVAL(point_array);
+        add_next_index_long(point_array, points[i].x);
+        add_next_index_long(point_array, points[i].y);
+        // Could the char -> long conversion here cause problems?
+        add_next_index_long(point_array, types[i]);
+        // Store this array in parent array
+        add_next_index_zval(return_value, point_array);
+    }
+}
+
+PHP_METHOD(WinGdiPath, toRegion)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_region_object *reg_obj;
+    wingdi_path_object *path_obj;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters_none() == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    // Create a Region object - we can then grab this from the object store
+    // using its handle.
+    object_init_ex(return_value, ce_wingdi_region);
+    reg_obj = zend_object_store_get_object_by_handle(Z_OBJ_HANDLE_P(return_value) TSRMLS_CC);
+
+    reg_obj->region_handle = PathToRegion(dc_obj->hdc);
+    if (!reg_obj->region_handle)
+    {
+        wingdi_create_error(GetLastError(), ce_wingdi_exception TSRMLS_CC);
+        return;
+    }
+}
+
+PHP_METHOD(WinGdiPath, setMiterLimit)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    FLOAT limit;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "d", &limit) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    // The last param for SetMiterLimit is populated with the old limit.
+    // Should we use it?
+    RETURN_BOOL(SetMiterLimit(dc_obj->hdc, limit, NULL));
+}
+
+PHP_METHOD(WinGdiPath, strokeAndFill)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters_none() == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    RETURN_BOOL(StrokeAndFillPath(dc_obj->hdc));
+}
+
+PHP_METHOD(WinGdiPath, stroke)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters_none() == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    RETURN_BOOL(StrokePath(dc_obj->hdc));
+}
+
+PHP_METHOD(WinGdiPath, widen)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters_none() == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    RETURN_BOOL(WidenPath(dc_obj->hdc));
+}
+
+// Now for the filled-shape functions.
+// I suppose these could be split into their own file (path_shapes)
 
 static const zend_function_entry wingdi_path_functions[] = {
     PHP_ME(WinGdiPath, __construct, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
+    PHP_ME(WinGdiPath, abort, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(WinGdiPath, closeFigure, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(WinGdiPath, fillPath, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(WinGdiPath, flattenPath, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(WinGdiPath, getMiterLimit, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(WinGdiPath, getPath, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(WinGdiPath, toRegion, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(WinGdiPath, setMiterLimit, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(WinGdiPath, strokeAndFill, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(WinGdiPath, stroke, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(WinGdiPath, widen, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 

@@ -13,8 +13,17 @@ Brush API:
 Color API:
  - Bits and Bobs!
  
-DisplayDevice API:
+DeviceContext API:
  - Lots!
+ - This really needs doing... lots of the other stuff depends on it,
+   and I can't write tests for that other stuff if this isn't working.
+   Man up, man up, man up!
  
 Pen API:
  - Lots!
+ 
+Path API:
+ - Lots!
+ - Get all methods finished
+ - Class constants
+ - Tests

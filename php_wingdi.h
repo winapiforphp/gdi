@@ -86,6 +86,11 @@ typedef struct _wingdi_bitmap_object {
 
 typedef struct _wingdi_path_object {
     zend_object std;
+    // The path stuff all requires a device context object, so, instead
+    // of having the DC passed in via a parameter to all the path methods
+    // (ick), have the user provide a DC with the path constructor, and 
+    // cache that DC here and use it when needed.
+    zval *device_context;
     zend_object_handle handle;
 } wingdi_path_object;
 
@@ -151,6 +156,17 @@ static inline wingdi_pen_object * wingdi_pen_object_get(zval * zobj TSRMLS_DC)
 	return obj;
 }
 */
+
+static inline wingdi_path_object * wingdi_path_object_get(zval * zobj TSRMLS_DC)
+{
+    wingdi_path_object * obj = zend_object_store_get_object(zobj TSRMLS_CC);
+    if (obj->device_context == NULL)
+    {
+        php_error(E_ERROR, "Internal device context handle missing in %s class, you must call parent::__construct() in extended classes", Z_OBJ_CLASS_NAME_P(zobj));
+        return NULL;
+    }
+    return obj;
+}
 
 static inline wingdi_region_object * wingdi_region_object_get(zval * zobj TSRMLS_DC)
 {
