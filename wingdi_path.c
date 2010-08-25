@@ -423,9 +423,94 @@ PHP_METHOD(WinGdiPath, pie)
     RETURN_BOOL(Pie(dc_obj->hdc, x1, y1, x2, y2, xr1, yr1, xr2, yr2));
 }
 
-PHP_METHOD(WinGdiPath, polygon)
+// A carbon copy of the Win\Gdi\Region\Polygon implementation
+// without some parameter checks (no poly-fill-mode given)
+PHP_METHOD(WinGdiRegionPolygon, polygon)
 {
-    // See Win\Gdi\Region\Polygon - that's how this should be implemented
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    HashPointer p;              // We use this to determine what index we are at in the array
+    POINT *points = NULL;
+    zval  ***parameters,
+          **current_elem,
+          **x, **y;
+    INT *point_counts   = NULL; // Number of POINTs in corresponding points array
+    int  ints_in_count  = 0,    // Number of ints in point_counts
+         param_count,
+         i, t = 0;              // Total number of POINTs
+
+    WINGDI_ERROR_HANDLING();
+    // Will throw an exception if no parameters are given
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "+", &parameters, &param_count) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    point_counts = emalloc(param_count * sizeof(INT));
+
+    for (i = 0; i < param_count; i++)
+    {
+        if (Z_TYPE_PP(parameters[i]) == IS_ARRAY)
+        {
+            point_counts[ints_in_count] = 0;
+
+            for (zend_hash_internal_pointer_reset(Z_ARRVAL_PP(parameters[i]));
+                 zend_hash_has_more_elements(Z_ARRVAL_PP(parameters[i])) == SUCCESS;
+                 zend_hash_move_forward(Z_ARRVAL_PP(parameters[i])))
+            {
+                points = erealloc(points, t * sizeof(POINT) + sizeof(POINT));
+                zend_hash_get_pointer(Z_ARRVAL_PP(parameters[i]), &p);
+                zend_hash_get_current_data(Z_ARRVAL_PP(parameters[i]), (void **)&current_elem);
+
+                if (Z_TYPE_PP(current_elem) != IS_ARRAY)
+                {
+                    php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "expected array in array for parameter %d, got %s", i + 1, zend_zval_type_name(*current_elem));
+                    goto CLEANUP;
+                }
+                else
+                {
+                    if (zend_hash_num_elements(Z_ARRVAL_PP(current_elem)) != 2)
+                    {
+                        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                            "expected point-array at index %d for parameter %d to have 2 elements, %d given",
+                            p.h, i + 1, zend_hash_num_elements(Z_ARRVAL_PP(current_elem)));
+                        goto CLEANUP;
+                    }
+                    else
+                    {
+                        zend_hash_index_find(Z_ARRVAL_PP(current_elem), 0, (void **)&x);
+                        zend_hash_index_find(Z_ARRVAL_PP(current_elem), 1, (void **)&y);
+                        if (Z_TYPE_PP(x) != IS_LONG)
+                            convert_to_long(*x);
+                        if (Z_TYPE_PP(y) != IS_LONG)
+                            convert_to_long(*y);
+
+                        points[t].x = Z_LVAL_PP(x);
+                        points[t].y = Z_LVAL_PP(y);
+                        t++;
+                        point_counts[ints_in_count]++;
+                    }
+                }
+            }
+
+            ints_in_count++;
+        }
+        else
+        {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "expecting array for parameter %d, got %s", zend_zval_type_name(*(parameters[i])));
+            goto CLEANUP;
+        }
+    }
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    RETURN_BOOL(PolyPolygon(dc_obj->hdc, points, point_counts, ints_in_count));
+
+CLEANUP:
+    efree(parameters);
+    efree(points);
+    efree(point_counts);
 }
 
 PHP_METHOD(WinGdiPath, roundedRectangle)
