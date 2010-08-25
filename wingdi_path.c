@@ -257,7 +257,195 @@ PHP_METHOD(WinGdiPath, widen)
 }
 
 // Now for the filled-shape functions.
-// I suppose these could be split into their own file (path_shapes)
+// I suppose these could be split into their own file (path_shapes, path_lines_and_curves?)
+
+PHP_METHOD(WinGdiPath, chord)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    int x1, y1, x2, y2,
+        xr1, yr1, xr2, yr2;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llllllll", 
+            &x1, &y1, &x2, &y2, &xr1, &yr1, &xr2, &yr2) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj   = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    RETURN_BOOL(Chord(dc_obj->hdc, x1, y1, x2, y2, xr1, yr1, xr2, yr2));
+}
+
+PHP_METHOD(WinGdiPath, ellipse)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    int x1, y1, x2, y2;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llll", &x1, &y1, &x2, &y2) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj   = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    RETURN_BOOL(Ellipse(dc_obj->hdc, x1, y1, x2, y2));
+}
+
+PHP_METHOD(WinGdiPath, fillRectangle)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_brush_object *br_obj;
+    wingdi_path_object *path_obj;
+    zval *coords_zval,
+         *br_zval,
+         **tmp;
+    RECT rect_coords;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz", &br_zval, &coords_zval) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    if (Z_TYPE_P(br_zval) == IS_OBJECT)
+        br_obj = wingdi_brush_object_get(br_zval TSRMLS_CC);
+    else 
+    {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR, "expected an object for parameter 2, got %s",
+            zend_zval_type_name(br_zval));
+        return;
+    }
+
+    // Is this the best way to do this?
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 0, (void **)&tmp);
+    rect_coords.top = Z_LVAL_PP(tmp);
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 1, (void **)&tmp);
+    rect_coords.left = Z_LVAL_PP(tmp);
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 2, (void **)&tmp);
+    rect_coords.bottom = Z_LVAL_PP(tmp);
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 3, (void **)&tmp);
+    rect_coords.right = Z_LVAL_PP(tmp);   
+
+    RETURN_BOOL(FillRect(dc_obj->hdc, &rect_coords, br_obj->brush_handle));
+}
+
+PHP_METHOD(WinGdiPath, frameRectangle)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_brush_object *br_obj;
+    wingdi_path_object *path_obj;
+    zval *coords_zval,
+         *br_zval,
+         **tmp;
+    RECT rect_coords;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz", &br_zval, &coords_zval) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    if (Z_TYPE_P(br_zval) == IS_OBJECT)
+        br_obj = wingdi_brush_object_get(br_zval TSRMLS_CC);
+    else 
+    {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR, "expected an object for parameter 2, got %s",
+            zend_zval_type_name(br_zval));
+        return;
+    }
+
+    // Is this the best way to do this?
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 0, (void **)&tmp);
+    rect_coords.top = Z_LVAL_PP(tmp);
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 1, (void **)&tmp);
+    rect_coords.left = Z_LVAL_PP(tmp);
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 2, (void **)&tmp);
+    rect_coords.bottom = Z_LVAL_PP(tmp);
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 3, (void **)&tmp);
+    rect_coords.right = Z_LVAL_PP(tmp);   
+
+    RETURN_BOOL(FrameRect(dc_obj->hdc, &rect_coords, br_obj->brush_handle));
+}
+
+PHP_METHOD(WinGdiPath, invertRectangle)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    zval *coords_zval,
+         **tmp;
+    RECT rect_coords;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &coords_zval) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    // Is this the best way to do this?
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 0, (void **)&tmp);
+    rect_coords.top = Z_LVAL_PP(tmp);
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 1, (void **)&tmp);
+    rect_coords.left = Z_LVAL_PP(tmp);
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 2, (void **)&tmp);
+    rect_coords.bottom = Z_LVAL_PP(tmp);
+    zend_hash_index_find(Z_ARRVAL_P(coords_zval), 3, (void **)&tmp);
+    rect_coords.right = Z_LVAL_PP(tmp);   
+
+    RETURN_BOOL(InvertRect(dc_obj->hdc, &rect_coords));
+}
+
+PHP_METHOD(WinGdiPath, pie)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    int x1, y1, x2, y2,
+        xr1, yr1, xr2, yr2;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llllllll", 
+            &x1, &y1, &x2, &y2, &xr1, &yr1, &xr2, &yr2) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj   = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    RETURN_BOOL(Pie(dc_obj->hdc, x1, y1, x2, y2, xr1, yr1, xr2, yr2));
+}
+
+PHP_METHOD(WinGdiPath, polygon)
+{
+    // See Win\Gdi\Region\Polygon - that's how this should be implemented
+}
+
+PHP_METHOD(WinGdiPath, roundedRectangle)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    int x1, y1, x2, y2,
+        width, height;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llllll", 
+            &x1, &y1, &x2, &y2, &width, &height) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj   = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    RETURN_BOOL(RoundRect(dc_obj->hdc, x1, y1, x2, y2, width, height));
+}
 
 static const zend_function_entry wingdi_path_functions[] = {
     PHP_ME(WinGdiPath, __construct, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)

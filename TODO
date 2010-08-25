@@ -27,3 +27,5 @@ Path API:
  - Get all methods finished
  - Class constants
  - Tests
+ - fillRectangle method should accept a Brush or a color value
+ - implement Path::polygon() method (same-ish impl. as Region\Polygon)
