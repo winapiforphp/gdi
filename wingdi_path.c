@@ -532,6 +532,305 @@ PHP_METHOD(WinGdiPath, roundedRectangle)
     RETURN_BOOL(RoundRect(dc_obj->hdc, x1, y1, x2, y2, width, height));
 }
 
+// Now for the Line & Curve functions
+
+PHP_METHOD(WinGdiPath, angleArc)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    DWORD radius;
+    FLOAT start, sweep; 
+    int x, y;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llldd", &x, &y, &radius, &start, &sweep) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    RETURN_BOOL(AngleArc(dc_obj->hdc, x, y, radius, start, sweep));
+}
+
+PHP_METHOD(WinGdiPath, arc)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    int x1, y1, x2, y2, x3, y3, x4, y4;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llllllll",
+            &x1, &y1, &x2, &y2, &x3, &y3, &x4, &y4) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    RETURN_BOOL(Arc(dc_obj->hdc, x1, y1, x2, y2, x3, y3, x4, y4));
+}
+
+PHP_METHOD(WinGdiPath, arcTo)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    int x1, y1, x2, y2, x3, y3, x4, y4;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llllllll",
+            &x1, &y1, &x2, &y2, &x3, &y3, &x4, &y4) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    RETURN_BOOL(Arc(dc_obj->hdc, x1, y1, x2, y2, x3, y3, x4, y4));
+}
+
+PHP_METHOD(WinGdiPath, getArcDirection)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters_none() == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    RETURN_LONG(GetArcDirection(dc_obj->hdc));
+}
+
+PHP_METHOD(WinGdiPath, lineTo)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    int x, y;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll", &x, &y) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    RETURN_BOOL(LineTo(dc_obj->hdc, x, y));
+}
+
+PHP_METHOD(WinGdiPath, moveTo)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    POINT previous;
+    BOOL result;
+    zval *out_zval = NULL;
+    int x, y;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll|z", &x, &y, &out_zval) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    result = MoveToEx(dc_obj->hdc, x, y, (out_zval) ? previous : NULL);
+    if (out_zval)
+    {
+        zval_dtor(out_zval);
+        array_init(out_zval);
+        add_next_index_long(out_zval, previous.x);
+        add_next_index_long(out_zval, previous.y);
+    }
+    
+    RETURN_BOOL(result);
+}
+
+PHP_METHOD(WinGdiPath, beizer)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    zval ***parameters,
+         **current_elem,
+         **x, **y;
+    POINT *points = NULL;
+    DWORD points_total;
+    int param_count, i;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "+", &parameters, &param_count) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    points = emalloc(param_count * sizeof(POINT));
+
+    for (i = 0; i < param_count; i++)
+    {
+        // We expect only arrays
+        if (Z_TYPE_PP(parameters[i]) != IS_ARRAY) 
+        {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR, "expected array for parameter %d, got %s",
+                i + 1, zend_zval_type_name(*(parameters[i])));
+            goto CLEANUP;
+        }
+        else
+        {
+            // We want 2 elements
+            if (zend_hash_num_elements(Z_ARRVAL_PP(parameters[i])) != 2)
+            {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR, 
+                    "expected 2 elements for array at parameter %d, got %d", 
+                    i + 1, zend_hash_num_elements(Z_ARRVAL_PP(parameters[i])));
+                goto CLEANUP;
+            }
+            else
+            {
+                zend_hash_index_find(Z_ARRVAL_PP(parameters[i]), 0, (void **)&x);
+                zend_hash_index_find(Z_ARRVAL_PP(parameters[i]), 1, (void **)&y);
+                if (Z_TYPE_PP(x) != IS_LONG) convert_to_long(*x);
+                if (Z_TYPE_PP(y) != IS_LONG) convert_to_long(*y);
+                points[i].x = Z_LVAL_PP(x);
+                points[i].y = Z_LVAL_PP(y);
+                points_total++;
+            }
+        }
+    }
+
+    RETVAL_BOOL(PolyBezier(dc_obj->hdc, points, points_total));
+
+CLEANUP:
+    efree(points);
+}
+
+PHP_METHOD(WinGdiPath, beizerTo)
+{    
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    zval ***parameters,
+         **current_elem,
+         **x, **y;
+    POINT *points = NULL;
+    DWORD points_total = 0;
+    int param_count, i;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "+", &parameters, &param_count) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    points = emalloc(param_count * sizeof(POINT));
+
+    for (i = 0; i < param_count; i++)
+    {
+        // We expect only arrays
+        if (Z_TYPE_PP(parameters[i]) != IS_ARRAY) 
+        {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR, "expected array for parameter %d, got %s",
+                i + 1, zend_zval_type_name(*(parameters[i])));
+            goto CLEANUP;
+        }
+        else
+        {
+            // We want 2 elements
+            if (zend_hash_num_elements(Z_ARRVAL_PP(parameters[i])) != 2)
+            {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR, 
+                    "expected 2 elements for array at parameter %d, got %d", 
+                    i + 1, zend_hash_num_elements(Z_ARRVAL_PP(parameters[i])));
+                goto CLEANUP;
+            }
+            else
+            {
+                zend_hash_index_find(Z_ARRVAL_PP(parameters[i]), 0, (void **)&x);
+                zend_hash_index_find(Z_ARRVAL_PP(parameters[i]), 1, (void **)&y);
+                if (Z_TYPE_PP(x) != IS_LONG) convert_to_long(*x);
+                if (Z_TYPE_PP(y) != IS_LONG) convert_to_long(*y);
+                points[i].x = Z_LVAL_PP(x);
+                points[i].y = Z_LVAL_PP(y);
+                points_total++;
+            }
+        }
+    }
+
+    RETVAL_BOOL(PolyBezierTo(dc_obj->hdc, points, points_total));
+
+CLEANUP:
+    efree(points);
+}
+
+PHP_METHOD(WinGdiPath, draw)
+{    
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    zval ***parameters,
+         **current_elem,
+         **x, **y, **type;
+    POINT *points = NULL;
+    BYTE  *types = NULL;
+    int points_total = 0;
+    int param_count, i;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "+", &parameters, &param_count) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    points = emalloc(param_count * sizeof(POINT));
+    types = emalloc(param_count * sizeof(BYTE));
+
+    for (i = 0; i < param_count; i++)
+    {
+        // We expect only arrays
+        if (Z_TYPE_PP(parameters[i]) != IS_ARRAY) 
+        {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR, "expected array for parameter %d, got %s",
+                i + 1, zend_zval_type_name(*(parameters[i])));
+            goto CLEANUP;
+        }
+        else
+        {
+            // We want 3 elements
+            if (zend_hash_num_elements(Z_ARRVAL_PP(parameters[i])) != 3)
+            {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR, 
+                    "expected 3 elements for array at parameter %d, got %d", 
+                    i + 1, zend_hash_num_elements(Z_ARRVAL_PP(parameters[i])));
+                goto CLEANUP;
+            }
+            else
+            {
+                zend_hash_index_find(Z_ARRVAL_PP(parameters[i]), 0, (void **)&x);
+                zend_hash_index_find(Z_ARRVAL_PP(parameters[i]), 1, (void **)&y);
+                zend_hash_index_find(Z_ARRVAL_PP(parameters[i]), 2, (void **)&type);
+                if (Z_TYPE_PP(x) != IS_LONG) convert_to_long(*x);
+                if (Z_TYPE_PP(y) != IS_LONG) convert_to_long(*y);
+                if (Z_TYPE_PP(type) != IS_LONG) convert_to_long(*type);
+                points[i].x = Z_LVAL_PP(x);
+                points[i].y = Z_LVAL_PP(y);
+                types[i] = Z_LVAL_PP(type);
+                points_total++;
+            }
+        }
+    }
+
+    RETVAL_BOOL(PolyDraw(dc_obj->hdc, points, types, points_total));
+
+CLEANUP:
+    efree(points);
+    efree(types);
+}
+
 static const zend_function_entry wingdi_path_functions[] = {
     PHP_ME(WinGdiPath, __construct, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
     PHP_ME(WinGdiPath, abort, NULL, ZEND_ACC_PUBLIC)
