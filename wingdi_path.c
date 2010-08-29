@@ -609,17 +609,58 @@ PHP_METHOD(WinGdiPath, lineTo)
 {
     wingdi_devicecontext_object *dc_obj;
     wingdi_path_object *path_obj;
-    int x, y;
+    zval ***parameters,
+         **current_elem,
+         **x, **y;
+    POINT *points = NULL;
+    DWORD points_total;
+    int param_count, i;
 
     WINGDI_ERROR_HANDLING();
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll", &x, &y) == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "+", &parameters, &param_count) == FAILURE)
         return;
     WINGDI_RESTORE_ERRORS();
 
     path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
     dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    points = emalloc(param_count * sizeof(POINT));
 
-    RETURN_BOOL(LineTo(dc_obj->hdc, x, y));
+    for (i = 0; i < param_count; i++)
+    {
+        // We expect only arrays
+        if (Z_TYPE_PP(parameters[i]) != IS_ARRAY) 
+        {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR, "expected array for parameter %d, got %s",
+                i + 1, zend_zval_type_name(*(parameters[i])));
+            goto CLEANUP;
+        }
+        else
+        {
+            // We want 2 elements
+            if (zend_hash_num_elements(Z_ARRVAL_PP(parameters[i])) != 2)
+            {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR, 
+                    "expected 2 elements for array at parameter %d, got %d", 
+                    i + 1, zend_hash_num_elements(Z_ARRVAL_PP(parameters[i])));
+                goto CLEANUP;
+            }
+            else
+            {
+                zend_hash_index_find(Z_ARRVAL_PP(parameters[i]), 0, (void **)&x);
+                zend_hash_index_find(Z_ARRVAL_PP(parameters[i]), 1, (void **)&y);
+                if (Z_TYPE_PP(x) != IS_LONG) convert_to_long(*x);
+                if (Z_TYPE_PP(y) != IS_LONG) convert_to_long(*y);
+                points[i].x = Z_LVAL_PP(x);
+                points[i].y = Z_LVAL_PP(y);
+                points_total++;
+            }
+        }
+    }
+
+    RETVAL_BOOL(PolylineTo(dc_obj->hdc, points, points_total));
+
+CLEANUP:
+    efree(points);
 }
 
 PHP_METHOD(WinGdiPath, moveTo)
@@ -829,6 +870,23 @@ PHP_METHOD(WinGdiPath, draw)
 CLEANUP:
     efree(points);
     efree(types);
+}
+
+PHP_METHOD(WinGdiPath, setArcDirection)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj;
+    int arc_dir;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &arc_dir) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+
+    RETURN_BOOL(SetArcDirection(dc_obj->hdc, arc_dir));
 }
 
 static const zend_function_entry wingdi_path_functions[] = {
