@@ -186,6 +186,7 @@ extern zend_class_entry *ce_wingdi_exception;
 extern zend_class_entry *ce_wingdi_argexception;
 extern zend_class_entry *ce_wingdi_versionexception;
 extern zend_class_entry *ce_wingdi_region;
+extern zend_class_entry *ce_wingdi_rect_region;
 extern zend_class_entry *ce_wingdi_path;
 
 /* ----------------------------------------------------------------

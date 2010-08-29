@@ -384,7 +384,7 @@ PHP_METHOD(WinGdiRegion, pointIn)
 */
 PHP_METHOD(WinGdiRegion, rectangleIn)
 {
-		wingdi_region_object *reg_obj;
+	wingdi_region_object *reg_obj;
 	zval *rect_zval;
 	BOOL result;
 	LONG *left, *top, *right, *bottom;
@@ -414,19 +414,21 @@ PHP_METHOD(WinGdiRegion, rectangleIn)
 */
 PHP_METHOD(WinGdiRegion, setRectangle)
 {
-	/** Not sure how to implement this.
-        Current thoughts are:
-        1) static method that returns a new obj, based on old object, and
-           nullify the object's region handle. Any attempts to use it there-
-           after will fail. But then the bool returned by SetRectRgn is not 
-           used.
-        2) static method that returns the boolean result of SetRectRgn. The 
-           method would take 2 objects, and perform similar operations on them
-           as 1.
-        3) the cleaner way would be to have an instance method and internally
-           change the type of the object (getThis()), but I'm not sure how to 
-           do that.
-    */
+    wingdi_region_object *reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
+    BOOL result;
+    int x1, y1, 
+        x2, y2;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llll", &x1, &y1, &x2, &y2) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    result = SetRectRgn(reg_obj->region_handle, x1, y1, x2, y2);
+    if (result)
+        reg_obj->std.ce = ce_wingdi_rect_region;
+
+    RETURN_BOOL(result);
 }
 /* }}} */
 
@@ -440,6 +442,7 @@ static const zend_function_entry wingdi_region_functions[] = {
 	ZEND_ME(WinGdiRegion, paint, arginfo_wingdi_region_paint, ZEND_ACC_PUBLIC)
 	ZEND_ME(WinGdiRegion, pointIn, arginfo_wingdi_region_point_in, ZEND_ACC_PUBLIC)
 	ZEND_ME(WinGdiRegion, rectangleIn, arginfo_wingdi_region_rect_in, ZEND_ACC_PUBLIC)
+    ZEND_ME(WinGdiRegion, setRectangle, NULL, ZEND_ACC_PUBLIC)
 	/* Aliases */
 	ZEND_MALIAS(WinGdiRegion, harvester, combine, arginfo_wingdi_region_combine, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 	/* Win\Gdi\Region->pointIn() doesn't read well (or make sense) to me. ->hasPoint() is much more intelligent. */

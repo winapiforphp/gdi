@@ -47,13 +47,13 @@ PHP_METHOD(WinGdiRegionRoundedRect, __construct)
         right, bottom,
         width, height;
 
-    WINGDI_ERROR_HANDLING()
+    WINGDI_ERROR_HANDLING();
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "llllll", 
             &left, &top, &right, &bottom, &width, &height) == FAILURE)
         return;
-    WINGDI_RESTORE_ERRORS()
+    WINGDI_RESTORE_ERRORS();
 
-    reg_obj = (wingdi_region_object *)wingdi_region_object_get(getThis() TSRMLS_CC);
+    reg_obj = (wingdi_region_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
     reg_obj->region_handle = CreateRoundRectRgn(left, top, right, bottom, width, height);
     if (reg_obj->region_handle == NULL)
     {
