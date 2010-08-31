@@ -610,10 +610,9 @@ PHP_METHOD(WinGdiPath, lineTo)
     wingdi_devicecontext_object *dc_obj;
     wingdi_path_object *path_obj;
     zval ***parameters,
-         **current_elem,
          **x, **y;
     POINT *points = NULL;
-    DWORD points_total;
+    DWORD points_total = 0;
     int param_count, i;
 
     WINGDI_ERROR_HANDLING();
@@ -680,7 +679,7 @@ PHP_METHOD(WinGdiPath, moveTo)
     path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
     dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
 
-    result = MoveToEx(dc_obj->hdc, x, y, (out_zval) ? previous : NULL);
+    result = MoveToEx(dc_obj->hdc, x, y, (out_zval) ? &previous : NULL);
     if (out_zval)
     {
         zval_dtor(out_zval);
@@ -697,10 +696,9 @@ PHP_METHOD(WinGdiPath, beizer)
     wingdi_devicecontext_object *dc_obj;
     wingdi_path_object *path_obj;
     zval ***parameters,
-         **current_elem,
          **x, **y;
     POINT *points = NULL;
-    DWORD points_total;
+    DWORD points_total = 0;
     int param_count, i;
 
     WINGDI_ERROR_HANDLING();
@@ -755,7 +753,6 @@ PHP_METHOD(WinGdiPath, beizerTo)
     wingdi_devicecontext_object *dc_obj;
     wingdi_path_object *path_obj;
     zval ***parameters,
-         **current_elem,
          **x, **y;
     POINT *points = NULL;
     DWORD points_total = 0;
@@ -813,7 +810,6 @@ PHP_METHOD(WinGdiPath, draw)
     wingdi_devicecontext_object *dc_obj;
     wingdi_path_object *path_obj;
     zval ***parameters,
-         **current_elem,
          **x, **y, **type;
     POINT *points = NULL;
     BYTE  *types = NULL;
@@ -859,7 +855,7 @@ PHP_METHOD(WinGdiPath, draw)
                 if (Z_TYPE_PP(type) != IS_LONG) convert_to_long(*type);
                 points[i].x = Z_LVAL_PP(x);
                 points[i].y = Z_LVAL_PP(y);
-                types[i] = Z_LVAL_PP(type);
+                types[i] = (BYTE)Z_LVAL_PP(type);
                 points_total++;
             }
         }
@@ -870,6 +866,96 @@ PHP_METHOD(WinGdiPath, draw)
 CLEANUP:
     efree(points);
     efree(types);
+}
+
+PHP_METHOD(WinGdiPath, line)
+{
+    wingdi_devicecontext_object *dc_obj;
+    wingdi_path_object *path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    POINT *points = NULL;
+    DWORD *point_counts = NULL;
+    zval ***parameters,
+         **x, **y,
+         **current_elem;
+    HashTable *current_param;
+    HashPointer p;
+    int  param_count  = 0,
+         total_points = 0, // The amount of POINTs in points
+         i;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "+", &parameters, &param_count) == FAILURE)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    for (i = 0; i < param_count; i++)
+    {
+        // All parameters should be arrays
+        if (Z_TYPE_PP(parameters[i]) == IS_ARRAY)
+        {
+            // Add room for new DWORD
+            point_counts = erealloc(point_counts, (i + 1) * sizeof(DWORD));
+            // Initialise number of points for current array
+            point_counts[i] = 0;
+            // Less typing
+            current_param = Z_ARRVAL_PP(parameters[i]);
+
+            // Loop over all elements in current array parameter
+            for (zend_hash_internal_pointer_reset(current_param);
+                 zend_hash_has_more_elements(current_param) == SUCCESS;
+                 zend_hash_move_forward(current_param))
+            {
+                // Add room for new POINT
+                points = erealloc(points, (total_points + 1) * sizeof(POINT));
+                // We want the hash pointer so we know what index we're at currently
+                zend_hash_get_pointer(current_param, &p);
+                // Pull the current data from hashtable
+                zend_hash_get_current_data(current_param, (void **)&current_elem);
+
+                // Sanity checks:
+                // 1) An array
+                // 2) 2 elements
+                if (Z_TYPE_PP(current_elem) != IS_ARRAY)
+                {
+                    php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "expected point-array for parameter %d, index %d, got %s",
+                        i + 1, p.h, zend_zval_type_name(*current_elem));
+                    goto CLEANUP;
+                }
+                if (zend_hash_num_elements(Z_ARRVAL_PP(current_elem)) != 2)
+                {
+                    php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                        "expected point-array for parameter %d index %d to have exactly 2 elements, %d given",
+                        i + 1, p.h, zend_hash_num_elements(Z_ARRVAL_PP(current_elem)));
+                    goto CLEANUP;
+                }
+
+                // Grab x and y coord and convert to long if needed
+                zend_hash_index_find(Z_ARRVAL_PP(current_elem), 0, (void **)&x);
+                zend_hash_index_find(Z_ARRVAL_PP(current_elem), 1, (void **)&y);
+                if (Z_TYPE_PP(x) != IS_LONG) convert_to_long(*x);
+                if (Z_TYPE_PP(y) != IS_LONG) convert_to_long(*y);
+                // Store
+                points[total_points].x = Z_LVAL_PP(x);
+                points[total_points].y = Z_LVAL_PP(y);
+                total_points++;
+                point_counts[i]++;
+            }
+        }
+        else
+        {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR, 
+                "expected array for parameter %d, got %s", i + 1, zend_zval_type_name(*(parameters[i])));
+            goto CLEANUP;
+        }
+    }
+
+    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    RETURN_BOOL(PolyPolyline(dc_obj->hdc, points, point_counts, total_points));
+
+CLEANUP:
+    efree(points);
+    efree(point_counts);
 }
 
 PHP_METHOD(WinGdiPath, setArcDirection)
