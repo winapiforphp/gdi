@@ -38,21 +38,267 @@ PHP_METHOD(WinGdiDeviceContext, __construct)
 {
 	LPCTSTR drivername = "DISPLAY";
 	LPCTSTR devicename = NULL;
-	//const DEVMODE *lpInitData - todo - allow settings
-	int drivername_len;
+	DEVMODE lpInitData;
+  	int drivername_len,
+        devicename_len;
+	wingdi_devicecontext_object *context_object = (wingdi_devicecontext_object*)zend_objects_get_address(getThis() TSRMLS_CC);
+    zval *devmode_array;
 
-	zval *object = getThis();
-	wingdi_devicecontext_object *context_object = (wingdi_devicecontext_object*)zend_objects_get_address(object TSRMLS_CC);
-
-	WINGDI_ERROR_HANDLING()
+	WINGDI_ERROR_HANDLING();
 	/* default is to create a DC for "DISPLAY" */
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &drivername, &drivername_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|ssa", 
+            &drivername, &drivername_len, &devicename, &devicename_len, &devmode_array) == FAILURE) {
 		return;
 	}
-    WINGDI_RESTORE_ERRORS()
+    WINGDI_RESTORE_ERRORS();
 
-	/* TODO: support DEVMODE struct as settings array */
-	context_object->hdc = CreateDC(drivername, devicename, NULL, NULL);
+    lpInitData.dmFields = 0;
+    if (devmode_array && Z_TYPE_P(devmode_array) == IS_ARRAY)
+    {
+        HashTable *hash = Z_ARRVAL_P(devmode_array);
+        zval **tmp;
+
+        #define DM_HASH_FIND(find) zend_hash_find(hash, find, sizeof(find) - 1, (void **)&tmp)
+        #define DM_JUGGLE(juggle) wingdi_juggle_type(*tmp, juggle TSRMLS_CC)
+        if (DM_HASH_FIND("devicename") == SUCCESS)
+            if (wingdi_juggle_type(*tmp, IS_STRING TSRMLS_CC) == SUCCESS)
+                strcpy(lpInitData.dmDeviceName, Z_STRVAL_PP(tmp));
+
+        if (DM_HASH_FIND("specversion") == SUCCESS) {
+            if (wingdi_juggle_type(*tmp, IS_LONG TSRMLS_CC) == SUCCESS)
+                lpInitData.dmSpecVersion = (WORD)Z_LVAL_PP(tmp);
+        }
+
+        if (DM_HASH_FIND("driverversion") == SUCCESS) {
+            if (wingdi_juggle_type(*tmp, IS_LONG TSRMLS_CC) == SUCCESS)
+                lpInitData.dmDriverVersion = (WORD)Z_LVAL_PP(tmp);
+        }
+
+        if (DM_HASH_FIND("orientation") == SUCCESS) {
+            if (wingdi_juggle_type(*tmp, IS_LONG TSRMLS_CC) == SUCCESS) {
+                lpInitData.dmOrientation = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_ORIENTATION;
+            }
+        }
+
+        if (DM_HASH_FIND("papersize") == SUCCESS) {
+            if (wingdi_juggle_type(*tmp, IS_LONG TSRMLS_CC) == SUCCESS) {
+                lpInitData.dmPaperSize = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_PAPERSIZE;
+            }
+        }
+
+        if (DM_HASH_FIND("paperlength") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmPaperLength = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_PAPERLENGTH;
+            }
+        }
+
+        if (DM_HASH_FIND("paperwidth") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmPaperWidth = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_PAPERWIDTH;
+            }
+        }
+
+        if (DM_HASH_FIND("scale") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmScale = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_SCALE;
+            }
+        }
+
+        if (DM_HASH_FIND("copies") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmCopies = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_COPIES;
+            }
+        }
+
+        if (DM_HASH_FIND("defaultsource") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmDefaultSource = (short)(tmp);
+                lpInitData.dmFields |= DM_DEFAULTSOURCE;
+            }
+        }
+
+        if (DM_HASH_FIND("printquality") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmPrintQuality = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_PRINTQUALITY;
+            }
+        }
+            
+        if (DM_HASH_FIND("position") == SUCCESS) {
+            if (Z_TYPE_PP(tmp) == IS_ARRAY) {
+                POINTL point;
+                zval **x, **y;
+                if (zend_hash_num_elements(Z_ARRVAL_PP(tmp)) != 2) {
+                    php_error_docref(NULL TSRMLS_CC, E_ERROR, 
+                        "expected 2 elements for 'position' array, got %d", 
+                        zend_hash_num_elements(Z_ARRVAL_PP(tmp)));
+                    return;
+                }
+                zend_hash_index_find(Z_ARRVAL_PP(tmp), 0, (void **)&x);
+                zend_hash_index_find(Z_ARRVAL_PP(tmp), 1, (void **)&y);
+                if (Z_TYPE_PP(x) != IS_LONG) convert_to_long(*x);
+                if (Z_TYPE_PP(y) != IS_LONG) convert_to_long(*y);
+                point.x = Z_LVAL_PP(x);
+                point.y = Z_LVAL_PP(y);
+                lpInitData.dmPosition = point;
+            } else {
+                php_error_docref(NULL TSRMLS_CC, E_ERROR, "expected an array for 'position' index");
+                return;
+            }
+        }
+
+        if (DM_HASH_FIND("displayorientation") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmDisplayOrientation = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_DISPLAYORIENTATION;
+            }
+        }
+
+        if (DM_HASH_FIND("displayfixedoutput") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmDisplayFixedOutput = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_DISPLAYFIXEDOUTPUT;
+            }
+        }
+
+        if (DM_HASH_FIND("color") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmColor = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_COLOR;
+            }
+        }
+        if (DM_HASH_FIND("duplex") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmDuplex = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_DUPLEX;
+            }
+        }
+        if (DM_HASH_FIND("yresolution") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmYResolution = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_YRESOLUTION;
+            }
+        }
+        if (DM_HASH_FIND("ttoption") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmTTOption = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_TTOPTION;
+            }
+        }
+        if (DM_HASH_FIND("collate") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmCollate = (short)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_COLLATE;
+            }
+        }
+        if (DM_HASH_FIND("formname") == SUCCESS) {
+            if (DM_JUGGLE(IS_STRING) == SUCCESS) {
+                strcpy(lpInitData.dmFormName, Z_STRVAL_PP(tmp));
+                lpInitData.dmFields |= DM_FORMNAME;
+            }
+        }
+        if (DM_HASH_FIND("logpixels") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmLogPixels = (WORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_LOGPIXELS;
+            }
+        }
+        if (DM_HASH_FIND("bitsperpel") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmBitsPerPel = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_BITSPERPEL;
+            }
+        }
+        if (DM_HASH_FIND("pelswidth") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmPelsWidth = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_PELSWIDTH;
+            }
+        }
+        if (DM_HASH_FIND("pelsheight") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmPelsHeight = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_PELSHEIGHT;
+            }
+        }
+        // Getting bored now :(
+        if (DM_HASH_FIND("displayflags") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmDisplayFlags = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_DISPLAYFLAGS;
+            }
+        }
+        if (DM_HASH_FIND("nup") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmNup = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_NUP;
+            }
+        }
+        if (DM_HASH_FIND("displayfrequency") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmDisplayFrequency = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_DISPLAYFREQUENCY;
+            }
+        }
+#if (WINVER >= 0x0400)
+        if (DM_HASH_FIND("icmmethod") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmICMMethod = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_ICMMETHOD;
+            }
+        }
+        if (DM_HASH_FIND("icmintent") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmICMIntent = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_ICMINTENT;
+            }
+        }
+        if (DM_HASH_FIND("mediatype") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmMediaType = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_MEDIATYPE;
+            }
+        }
+        if (DM_HASH_FIND("dithertype") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmDitherType = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_DITHERTYPE;
+            }
+        }
+        if (DM_HASH_FIND("reserved1") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmReserved1 = (DWORD)Z_LVAL_PP(tmp);
+            }
+        }
+        if (DM_HASH_FIND("reserved2") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmReserved2 = (DWORD)Z_LVAL_PP(tmp);
+            }
+        }
+#if (WINVER >= 0x0500) || (_WIN32_WINNT >= 0x0400)
+        if (DM_HASH_FIND("panningwidth") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmPanningWidth = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_PANNINGWIDTH;
+            }
+        }
+        if (DM_HASH_FIND("panningheight") == SUCCESS) {
+            if (DM_JUGGLE(IS_LONG) == SUCCESS) {
+                lpInitData.dmPanningHeight = (DWORD)Z_LVAL_PP(tmp);
+                lpInitData.dmFields |= DM_PANNINGHEIGHT;
+            }
+        }
+#endif
+#endif
+    }
+
+	context_object->hdc = CreateDC(drivername, devicename, NULL, &lpInitData);
 	if (context_object->hdc == NULL) {
 		zend_throw_exception(ce_wingdi_exception, "Error creating device context", 0 TSRMLS_CC);
 	}
