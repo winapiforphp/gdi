@@ -417,6 +417,46 @@ PHP_METHOD(WinGdiDeviceContext, restore)
 }
 /* }}} */
 
+PHP_METHOD(WinGdiDeviceContext, getDisplayDevice)
+{
+    DISPLAY_DEVICE display_device_data;
+    LPCTSTR device_name = NULL;
+    DWORD device_num = 0,
+          flags = 0;
+    BOOL result;
+    zval *z_device;
+
+    WINGDI_ERROR_HANDLING();
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz", &z_device, &flags) != SUCCESS)
+        return;
+    WINGDI_RESTORE_ERRORS();
+
+    // Figure out whether we have a number or string for first param
+    if (Z_TYPE_P(z_device) == IS_STRING)
+        device_name = (LPCTSTR)Z_STRVAL_P(z_device);
+    else if (Z_TYPE_P(z_device) == IS_LONG)
+        device_num = (DWORD)Z_LVAL_P(z_device);
+    else {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR, "expected int or string for param 1, got %s",
+            zend_zval_type_name(z_device));
+        return;
+    }
+    flags = EDD_GET_DEVICE_INTERFACE_NAME;
+
+    display_device_data.cb = sizeof(DISPLAY_DEVICE);
+    result = EnumDisplayDevices(device_name, device_num, &display_device_data, flags);
+    if (!result) {
+        RETURN_FALSE;
+    }
+    // Populate return with data
+    array_init(return_value);
+    add_assoc_string(return_value, "devicename", display_device_data.DeviceName, 1);
+    add_assoc_string(return_value, "devicestring", display_device_data.DeviceString, 1);
+    add_assoc_string(return_value, "deviceid", display_device_data.DeviceID, 1);
+    add_assoc_string(return_value, "devicekey", display_device_data.DeviceKey, 1);
+    add_assoc_long(return_value, "stateflags", display_device_data.StateFlags);
+}
+
 /* {{{ Method definitions */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_devicecontext___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, devicename)
@@ -432,6 +472,7 @@ static const zend_function_entry wingdi_devicecontext_functions[] = {
 	PHP_ME(WinGdiDeviceContext, cancel, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(WinGdiDeviceContext, save, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(WinGdiDeviceContext, restore, arginfo_wingdi_devicecontext_restore, ZEND_ACC_PUBLIC)
+    PHP_ME(WinGdiDeviceContext, getDisplayDevice, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 	{NULL, NULL, NULL}
 };
 /* }}} */
