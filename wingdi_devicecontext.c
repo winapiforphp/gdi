@@ -42,7 +42,7 @@ PHP_METHOD(WinGdiDeviceContext, __construct)
   	int drivername_len,
         devicename_len;
 	wingdi_devicecontext_object *context_object = (wingdi_devicecontext_object*)zend_objects_get_address(getThis() TSRMLS_CC);
-    zval *devmode_array;
+    zval *devmode_array = NULL;
 
 	WINGDI_ERROR_HANDLING();
 	/* default is to create a DC for "DISPLAY" */
