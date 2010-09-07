@@ -104,6 +104,7 @@ typedef struct _wingdi_region_object {
   C API                                             
 ------------------------------------------------------------------*/
 void wingdi_create_error(int error, zend_class_entry *ce TSRMLS_DC);
+int  wingdi_juggle_type(zval *value, int type TSRMLS_DC);
 zend_object_value wingdi_region_object_new(zend_class_entry *ce TSRMLS_DC);
 
 static inline wingdi_bitmap_object * wingdi_bitmap_object_get(zval * zobj TSRMLS_DC)
