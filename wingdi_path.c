@@ -1058,8 +1058,7 @@ static void construction_wrapper (INTERNAL_FUNCTION_PARAMETERS)
     zend_class_entry      *this_ce;
     zend_function         *zf;
     wingdi_path_object    *path_obj;
-    zval                  *_this       = getThis(),
-                          *retval_ptr = NULL;
+    zval                  *_this    = getThis();
 
     path_obj = zend_object_store_get_object(_this TSRMLS_CC);
     zf       = zend_get_std_object_handlers()->get_constructor(_this TSRMLS_CC);
@@ -1067,7 +1066,7 @@ static void construction_wrapper (INTERNAL_FUNCTION_PARAMETERS)
 
     fci.size           = sizeof(fci);
     fci.function_table = &this_ce->function_table;
-    fci.retval_ptr_ptr = &retval_ptr;
+    fci.retval_ptr_ptr = &return_value;
     fci.object_ptr     = _this;
     fci.param_count    = ZEND_NUM_ARGS();
     fci.params         = emalloc(fci.param_count * sizeof *fci.params);
@@ -1087,7 +1086,6 @@ static void construction_wrapper (INTERNAL_FUNCTION_PARAMETERS)
             "parent::__construct() must be called in %s::__construct()", this_ce->name);
 
     efree(fci.params);
-    zval_ptr_dtor(&retval_ptr);
 }
 /* ----------------------------------------------------------------
   Win\Gdi\Path Lifecycle functions
