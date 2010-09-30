@@ -86,6 +86,7 @@ typedef struct _wingdi_bitmap_object {
 
 typedef struct _wingdi_path_object {
     zend_object std;
+    zend_bool   constructed;
     // The path stuff all requires a device context object, so, instead
     // of having the DC passed in via a parameter to all the path methods
     // (ick), have the user provide a DC with the path constructor, and 
@@ -188,7 +189,7 @@ extern zend_class_entry *ce_wingdi_argexception;
 extern zend_class_entry *ce_wingdi_versionexception;
 extern zend_class_entry *ce_wingdi_region;
 extern zend_class_entry *ce_wingdi_rect_region;
-extern zend_class_entry *ce_wingdi_path;
+//extern zend_class_entry *ce_wingdi_path;
 
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking                                                

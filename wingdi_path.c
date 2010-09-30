@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Mark G. Skilbeck <markskilbeck@php.net                       |
+  | Author: Mark G. Skilbeck <markskilbeck@php.net>                      |
   +----------------------------------------------------------------------+
 */
 
@@ -21,7 +21,9 @@
 #include "php_wingdi.h"
 #include <zend_exceptions.h>
 
-zend_class_entry *ce_wingdi_path;
+static zend_object_handlers object_handlers;
+static zend_class_entry     *ce_wingdi_path;
+static zend_function        ctor_wrapper_func;
 
 /* ----------------------------------------------------------------
   Win\Gdi\Bitmap Userland API
@@ -50,7 +52,10 @@ PHP_METHOD(WinGdiPath, __construct)
     // Is this the correct way to handle this error?
     if (result == 0)
         zend_throw_exception(ce_wingdi_exception, "error creating path", 0 TSRMLS_CC);
+
     path_obj->device_context = dc_zval;
+    path_obj->constructed    = 1;
+
     Z_ADDREF_P(dc_zval);
 }
 
@@ -1020,9 +1025,10 @@ zend_object_value wingdi_path_object_new(zend_class_entry *ce TSRMLS_DC)
         NULL
         TSRMLS_CC
     );
+    path_obj->constructed = 0;
     
-    ret.handle = path_obj->handle;
-    ret.handlers = zend_get_std_object_handlers();
+    ret.handle   = path_obj->handle;
+    ret.handlers = &object_handlers;
 
     ALLOC_HASHTABLE(path_obj->std.properties);
     zend_hash_init(path_obj->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
@@ -1032,6 +1038,57 @@ zend_object_value wingdi_path_object_new(zend_class_entry *ce TSRMLS_DC)
     return ret;
 }
 
+static zend_function * get_constructor (zval * object TSRMLS_DC)
+{
+    if (Z_OBJCE_P(object) == ce_wingdi_path)
+    {
+        return zend_get_std_object_handlers()->get_constructor(object TSRMLS_CC);
+    }
+    else
+    {
+        return &ctor_wrapper_func;
+    }
+}
+
+
+static void construction_wrapper (INTERNAL_FUNCTION_PARAMETERS)
+{
+    zend_fcall_info_cache fci_cache = {0};
+    zend_fcall_info       fci       = {0};
+    zend_class_entry      *this_ce;
+    zend_function         *zf;
+    wingdi_path_object    *path_obj;
+    zval                  *_this       = getThis(),
+                          *retval_ptr = NULL;
+
+    path_obj = zend_object_store_get_object(_this TSRMLS_CC);
+    zf       = zend_get_std_object_handlers()->get_constructor(_this TSRMLS_CC);
+    this_ce  = Z_OBJCE_P(_this);
+
+    fci.size           = sizeof(fci);
+    fci.function_table = &this_ce->function_table;
+    fci.retval_ptr_ptr = &retval_ptr;
+    fci.object_ptr     = _this;
+    fci.param_count    = ZEND_NUM_ARGS();
+    fci.params         = emalloc(fci.param_count * sizeof *fci.params);
+    fci.no_separation  = 0;
+    _zend_get_parameters_array_ex(fci.param_count, fci.params TSRMLS_CC);
+
+    fci_cache.initialized      = 1;
+    fci_cache.called_scope     = EG(current_execute_data)->called_scope;
+    fci_cache.calling_scope    = EG(current_execute_data)->current_scope;
+    fci_cache.function_handler = zf;
+    fci_cache.object_ptr       = _this;
+
+    zend_call_function(&fci, &fci_cache TSRMLS_CC);
+
+    if (!EG(exception) && path_obj->constructed == 0)
+        zend_throw_exception_ex(NULL, 0 TSRMLS_CC,
+            "parent::__construct() must be called in %s::__construct()", this_ce->name);
+
+    efree(fci.params);
+    zval_ptr_dtor(&retval_ptr);
+}
 /* ----------------------------------------------------------------
   Win\Gdi\Path Lifecycle functions
 ------------------------------------------------------------------*/
@@ -1042,7 +1099,21 @@ PHP_MINIT_FUNCTION(wingdi_path)
 
     INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_NS, "Path", wingdi_path_functions);
     ce_wingdi_path = zend_register_internal_class(&ce TSRMLS_CC);
-    ce_wingdi_path->create_object;
+    ce_wingdi_path->create_object = wingdi_path_object_new;
+
+    memcpy(&object_handlers, zend_get_std_object_handlers(),
+        sizeof(object_handlers));
+    object_handlers.get_constructor = get_constructor;
+
+    ctor_wrapper_func.type                 = ZEND_INTERNAL_FUNCTION;
+    ctor_wrapper_func.common.function_name = "internal_construction_wrapper";
+    ctor_wrapper_func.common.scope         = ce_wingdi_path;
+    ctor_wrapper_func.common.fn_flags      = ZEND_ACC_PROTECTED;
+    ctor_wrapper_func.common.prototype     = NULL;
+    ctor_wrapper_func.common.required_num_args = 0;
+    ctor_wrapper_func.common.arg_info      = NULL;
+    ctor_wrapper_func.internal_function.handler = construction_wrapper;
+    ctor_wrapper_func.internal_function.module  = EG(current_module);
 
     return SUCCESS;
 }
