@@ -53,6 +53,7 @@ PHP_METHOD(WinGdiRegionRect, __construct)
 
     reg_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
     reg_obj->region_handle = CreateRectRgn(left, top, right, bottom);
+    reg_obj->constructed   = TRUE;
 }
 /* }}} */
 

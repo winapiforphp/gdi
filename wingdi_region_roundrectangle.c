@@ -57,6 +57,7 @@ PHP_METHOD(WinGdiRegionRoundedRect, __construct)
 
     reg_obj = (wingdi_region_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
     reg_obj->region_handle = CreateRoundRectRgn(left, top, right, bottom, width, height);
+    reg_obj->constructed = TRUE;
     if (reg_obj->region_handle == NULL)
     {
         wingdi_create_error(GetLastError(), ce_wingdi_exception TSRMLS_CC);
