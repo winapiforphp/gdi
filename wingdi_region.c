@@ -46,6 +46,7 @@ zend_object_value wingdi_region_object_new(zend_class_entry *ce TSRMLS_DC)
 		TSRMLS_CC
 	);
 	reg->region_handle = NULL;
+    reg->constructed   = 0;
 
 	ret.handle   = reg->handle;
 	ret.handlers = zend_get_std_object_handlers();
@@ -151,8 +152,8 @@ PHP_METHOD(WinGdiRegion, equal)
 		return;
 	WINGDI_RESTORE_ERRORS()
 
-    reg_obj_a = (wingdi_region_object *)wingdi_region_object_get(reg_a_zval TSRMLS_CC);
-	reg_obj_b = (wingdi_region_object *)wingdi_region_object_get(reg_b_zval TSRMLS_CC);
+    reg_obj_a = (wingdi_region_object *)zend_object_store_get_object(reg_a_zval TSRMLS_CC);
+	reg_obj_b = (wingdi_region_object *)zend_object_store_get_object(reg_b_zval TSRMLS_CC);
 
 	result = EqualRgn(reg_obj_a->region_handle, reg_obj_b->region_handle);
 	RETURN_BOOL(result);
@@ -180,9 +181,9 @@ PHP_METHOD(WinGdiRegion, combine)
 	}
 	WINGDI_RESTORE_ERRORS()
 
-    reg_obj_out = (wingdi_region_object *)wingdi_region_object_get(reg_out_zval TSRMLS_CC);
-    reg_obj_a = (wingdi_region_object *)wingdi_region_object_get(reg_a_zval TSRMLS_CC);
-	reg_obj_b = (wingdi_region_object *)wingdi_region_object_get(reg_b_zval TSRMLS_CC);
+    reg_obj_out = (wingdi_region_object *)zend_object_store_get_object(reg_out_zval TSRMLS_CC);
+    reg_obj_a   = (wingdi_region_object *)zend_object_store_get_object(reg_a_zval TSRMLS_CC);
+	reg_obj_b   = (wingdi_region_object *)zend_object_store_get_object(reg_b_zval TSRMLS_CC);
 
 	result = 
 		CombineRgn(reg_obj_out->region_handle, reg_obj_a->region_handle, reg_obj_b->region_handle, mode);
@@ -202,7 +203,7 @@ PHP_METHOD(WinGdiRegion, fill)
 	wingdi_devicecontext_object *dc_obj;
 	wingdi_region_object *reg_obj;
 	wingdi_brush_object  *brush_obj;
-		zval *dc_zval,
+	zval *dc_zval,
 		 *brush_zval;
 	BOOL result;
 
@@ -211,9 +212,9 @@ PHP_METHOD(WinGdiRegion, fill)
 		return;
 	WINGDI_RESTORE_ERRORS()
 
-	dc_obj    = wingdi_devicecontext_object_get(dc_zval TSRMLS_CC);
-	reg_obj   = wingdi_region_object_get(getThis() TSRMLS_CC);
-	brush_obj = wingdi_brush_object_get(brush_zval TSRMLS_CC);
+	dc_obj    = zend_object_store_get_object(dc_zval TSRMLS_CC);
+	reg_obj   = zend_object_store_get_object(getThis() TSRMLS_CC);
+	brush_obj = zend_object_store_get_object(brush_zval TSRMLS_CC);
 
 	result = FillRgn(dc_obj->hdc, reg_obj->region_handle, brush_obj->brush_handle);
 
@@ -227,7 +228,7 @@ PHP_METHOD(WinGdiRegion, fill)
 PHP_METHOD(WinGdiRegion, frame)
 {
     wingdi_devicecontext_object *dc_obj;
-    wingdi_region_object *reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
+    wingdi_region_object *reg_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
     wingdi_brush_object  *br_obj;
     zval *dc_zval,
          *br_zval;
@@ -240,8 +241,8 @@ PHP_METHOD(WinGdiRegion, frame)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    dc_obj = wingdi_devicecontext_object_get(dc_zval TSRMLS_CC);
-    br_obj = wingdi_brush_object_get(br_zval TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(dc_zval TSRMLS_CC);
+    br_obj = zend_object_store_get_object(br_zval TSRMLS_CC);
     
     result = FrameRgn(dc_obj->hdc, reg_obj->region_handle, br_obj->brush_handle, width, height);
     RETURN_BOOL(result);
@@ -261,7 +262,7 @@ PHP_METHOD(WinGdiRegion, getBox)
 		return;
 	WINGDI_RESTORE_ERRORS()
 
-	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
+	reg_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
 	/** Should we do anything with the return of GetRgnBox(), other than check for an error? */
 	result = GetRgnBox(reg_obj->region_handle, box);
 	if (result == ERROR)
@@ -295,8 +296,8 @@ PHP_METHOD(WinGdiRegion, invert)
 		return;
 	WINGDI_RESTORE_ERRORS()
 
-	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
-	dc_obj  = wingdi_devicecontext_object_get(dc_zval TSRMLS_CC);
+	reg_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+	dc_obj  = zend_object_store_get_object(dc_zval TSRMLS_CC);
 
 	result = InvertRgn(dc_obj->hdc, reg_obj->region_handle);
 
@@ -319,7 +320,7 @@ PHP_METHOD(WinGdiRegion, offset)
 		return;
 	WINGDI_RESTORE_ERRORS()
 
-	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
+	reg_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	result = OffsetRgn(reg_obj->region_handle, x_offset, y_offset);
 	if (result == ERROR)
@@ -348,8 +349,8 @@ PHP_METHOD(WinGdiRegion, paint)
 		return;
 	WINGDI_RESTORE_ERRORS()
 
-	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
-	dc_obj  = wingdi_devicecontext_object_get(dc_zval TSRMLS_CC);
+	reg_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+	dc_obj  = zend_object_store_get_object(dc_zval TSRMLS_CC);
 
 	result = PaintRgn(dc_obj->hdc, reg_obj->region_handle);
 
@@ -372,7 +373,7 @@ PHP_METHOD(WinGdiRegion, pointIn)
 		return;
 	WINGDI_RESTORE_ERRORS()
 
-	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
+	reg_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	result = PtInRegion(reg_obj->region_handle, x, y);
 	RETURN_BOOL(result);
@@ -395,7 +396,7 @@ PHP_METHOD(WinGdiRegion, rectangleIn)
 		return;
 	WINGDI_RESTORE_ERRORS()
 
-	reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
+	reg_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
 	zend_hash_index_find(Z_ARRVAL_P(rect_zval), 0, &left);
 	zend_hash_index_find(Z_ARRVAL_P(rect_zval), 1, &top);
 	zend_hash_index_find(Z_ARRVAL_P(rect_zval), 2, &right);
@@ -414,7 +415,7 @@ PHP_METHOD(WinGdiRegion, rectangleIn)
 */
 PHP_METHOD(WinGdiRegion, setRectangle)
 {
-    wingdi_region_object *reg_obj = wingdi_region_object_get(getThis() TSRMLS_CC);
+    wingdi_region_object *reg_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
     BOOL result;
     int x1, y1, 
         x2, y2;
@@ -426,7 +427,7 @@ PHP_METHOD(WinGdiRegion, setRectangle)
 
     result = SetRectRgn(reg_obj->region_handle, x1, y1, x2, y2);
     if (result)
-        reg_obj->std.ce = ce_wingdi_rect_region;
+        //reg_obj->std.ce = ce_wingdi_rect_region;
 
     RETURN_BOOL(result);
 }

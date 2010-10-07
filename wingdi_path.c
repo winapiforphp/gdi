@@ -47,7 +47,7 @@ PHP_METHOD(WinGdiPath, __construct)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    dc_obj = wingdi_devicecontext_object_get(dc_zval TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(dc_zval TSRMLS_CC);
     result = BeginPath(dc_obj->hdc);
     // Is this the correct way to handle this error?
     if (result == 0)
@@ -69,8 +69,8 @@ PHP_METHOD(WinGdiPath, abort)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     RETURN_BOOL(AbortPath(dc_obj->hdc));
 }
 
@@ -84,8 +84,8 @@ PHP_METHOD(WinGdiPath, closeFigure)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     RETURN_BOOL(CloseFigure(dc_obj->hdc));
 }
 
@@ -99,8 +99,8 @@ PHP_METHOD(WinGdiPath, fillPath)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     RETURN_BOOL(FillPath(dc_obj->hdc));
 }
 
@@ -114,8 +114,8 @@ PHP_METHOD(WinGdiPath, flattenPath)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     RETURN_BOOL(FlattenPath(dc_obj->hdc));
 }
 
@@ -130,8 +130,8 @@ PHP_METHOD(WinGdiPath, getMiterLimit)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     RETURN_DOUBLE(GetMiterLimit(dc_obj->hdc, (PFLOAT)&limit));
 }
 
@@ -150,8 +150,8 @@ PHP_METHOD(WinGdiPath, getPath)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj   = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj   = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     // Determine how many points exist in the path
     points_total = GetPath(dc_obj->hdc, NULL, NULL, 0);
@@ -183,8 +183,8 @@ PHP_METHOD(WinGdiPath, toRegion)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     // Create a Region object - we can then grab this from the object store
     // using its handle.
     object_init_ex(return_value, ce_wingdi_region);
@@ -209,8 +209,8 @@ PHP_METHOD(WinGdiPath, setMiterLimit)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     // The last param for SetMiterLimit is populated with the old limit.
     // Should we use it?
     RETURN_BOOL(SetMiterLimit(dc_obj->hdc, limit, NULL));
@@ -226,8 +226,8 @@ PHP_METHOD(WinGdiPath, strokeAndFill)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     RETURN_BOOL(StrokeAndFillPath(dc_obj->hdc));
 }
 
@@ -241,8 +241,8 @@ PHP_METHOD(WinGdiPath, stroke)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     RETURN_BOOL(StrokePath(dc_obj->hdc));
 }
 
@@ -256,8 +256,8 @@ PHP_METHOD(WinGdiPath, widen)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     RETURN_BOOL(WidenPath(dc_obj->hdc));
 }
 
@@ -278,7 +278,7 @@ PHP_METHOD(WinGdiPath, chord)
     WINGDI_RESTORE_ERRORS();
 
     path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
-    dc_obj   = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    dc_obj   = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     RETURN_BOOL(Chord(dc_obj->hdc, x1, y1, x2, y2, xr1, yr1, xr2, yr2));
 }
@@ -295,7 +295,7 @@ PHP_METHOD(WinGdiPath, ellipse)
     WINGDI_RESTORE_ERRORS();
 
     path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
-    dc_obj   = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    dc_obj   = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     RETURN_BOOL(Ellipse(dc_obj->hdc, x1, y1, x2, y2));
 }
@@ -316,10 +316,10 @@ PHP_METHOD(WinGdiPath, fillRectangle)
     WINGDI_RESTORE_ERRORS();
 
     path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     if (Z_TYPE_P(br_zval) == IS_OBJECT)
-        br_obj = wingdi_brush_object_get(br_zval TSRMLS_CC);
+        br_obj = zend_object_store_get_object(br_zval TSRMLS_CC);
     else 
     {
         php_error_docref(NULL TSRMLS_CC, E_ERROR, "expected an object for parameter 2, got %s",
@@ -356,10 +356,10 @@ PHP_METHOD(WinGdiPath, frameRectangle)
     WINGDI_RESTORE_ERRORS();
 
     path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     if (Z_TYPE_P(br_zval) == IS_OBJECT)
-        br_obj = wingdi_brush_object_get(br_zval TSRMLS_CC);
+        br_obj = zend_object_store_get_object(br_zval TSRMLS_CC);
     else 
     {
         php_error_docref(NULL TSRMLS_CC, E_ERROR, "expected an object for parameter 2, got %s",
@@ -394,7 +394,7 @@ PHP_METHOD(WinGdiPath, invertRectangle)
     WINGDI_RESTORE_ERRORS();
 
     path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     // Is this the best way to do this?
     zend_hash_index_find(Z_ARRVAL_P(coords_zval), 0, (void **)&tmp);
@@ -423,7 +423,7 @@ PHP_METHOD(WinGdiPath, pie)
     WINGDI_RESTORE_ERRORS();
 
     path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
-    dc_obj   = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    dc_obj   = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     RETURN_BOOL(Pie(dc_obj->hdc, x1, y1, x2, y2, xr1, yr1, xr2, yr2));
 }
@@ -508,8 +508,8 @@ PHP_METHOD(WinGdiRegionPolygon, polygon)
         }
     }
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     RETURN_BOOL(PolyPolygon(dc_obj->hdc, points, point_counts, ints_in_count));
 
 CLEANUP:
@@ -532,7 +532,7 @@ PHP_METHOD(WinGdiPath, roundedRectangle)
     WINGDI_RESTORE_ERRORS();
 
     path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
-    dc_obj   = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    dc_obj   = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     RETURN_BOOL(RoundRect(dc_obj->hdc, x1, y1, x2, y2, width, height));
 }
@@ -552,8 +552,8 @@ PHP_METHOD(WinGdiPath, angleArc)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     RETURN_BOOL(AngleArc(dc_obj->hdc, x, y, radius, start, sweep));
 }
@@ -570,8 +570,8 @@ PHP_METHOD(WinGdiPath, arc)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     RETURN_BOOL(Arc(dc_obj->hdc, x1, y1, x2, y2, x3, y3, x4, y4));
 }
@@ -588,8 +588,8 @@ PHP_METHOD(WinGdiPath, arcTo)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     RETURN_BOOL(Arc(dc_obj->hdc, x1, y1, x2, y2, x3, y3, x4, y4));
 }
@@ -604,8 +604,8 @@ PHP_METHOD(WinGdiPath, getArcDirection)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     RETURN_LONG(GetArcDirection(dc_obj->hdc));
 }
@@ -625,8 +625,8 @@ PHP_METHOD(WinGdiPath, lineTo)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     points = emalloc(param_count * sizeof(POINT));
 
     for (i = 0; i < param_count; i++)
@@ -681,8 +681,8 @@ PHP_METHOD(WinGdiPath, moveTo)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     result = MoveToEx(dc_obj->hdc, x, y, (out_zval) ? &previous : NULL);
     if (out_zval)
@@ -711,8 +711,8 @@ PHP_METHOD(WinGdiPath, beizer)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     points = emalloc(param_count * sizeof(POINT));
 
     for (i = 0; i < param_count; i++)
@@ -768,8 +768,8 @@ PHP_METHOD(WinGdiPath, beizerTo)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     points = emalloc(param_count * sizeof(POINT));
 
     for (i = 0; i < param_count; i++)
@@ -826,8 +826,8 @@ PHP_METHOD(WinGdiPath, draw)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     points = emalloc(param_count * sizeof(POINT));
     types = emalloc(param_count * sizeof(BYTE));
 
@@ -876,7 +876,7 @@ CLEANUP:
 PHP_METHOD(WinGdiPath, line)
 {
     wingdi_devicecontext_object *dc_obj;
-    wingdi_path_object *path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
+    wingdi_path_object *path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
     POINT *points = NULL;
     DWORD *point_counts = NULL;
     zval ***parameters,
@@ -955,7 +955,7 @@ PHP_METHOD(WinGdiPath, line)
         }
     }
 
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
     RETURN_BOOL(PolyPolyline(dc_obj->hdc, points, point_counts, total_points));
 
 CLEANUP:
@@ -974,8 +974,8 @@ PHP_METHOD(WinGdiPath, setArcDirection)
         return;
     WINGDI_RESTORE_ERRORS();
 
-    path_obj = wingdi_path_object_get(getThis() TSRMLS_CC);
-    dc_obj = wingdi_devicecontext_object_get(path_obj->device_context TSRMLS_CC);
+    path_obj = zend_object_store_get_object(getThis() TSRMLS_CC);
+    dc_obj = zend_object_store_get_object(path_obj->device_context TSRMLS_CC);
 
     RETURN_BOOL(SetArcDirection(dc_obj->hdc, arc_dir));
 }
@@ -1058,7 +1058,8 @@ static void construction_wrapper (INTERNAL_FUNCTION_PARAMETERS)
     zend_class_entry      *this_ce;
     zend_function         *zf;
     wingdi_path_object    *path_obj;
-    zval                  *_this    = getThis();
+    zval                  *_this    = getThis(),
+                          *retval_ptr = NULL;
 
     path_obj = zend_object_store_get_object(_this TSRMLS_CC);
     zf       = zend_get_std_object_handlers()->get_constructor(_this TSRMLS_CC);
@@ -1066,7 +1067,7 @@ static void construction_wrapper (INTERNAL_FUNCTION_PARAMETERS)
 
     fci.size           = sizeof(fci);
     fci.function_table = &this_ce->function_table;
-    fci.retval_ptr_ptr = &return_value;
+    fci.retval_ptr_ptr = &retval_ptr;
     fci.object_ptr     = _this;
     fci.param_count    = ZEND_NUM_ARGS();
     fci.params         = emalloc(fci.param_count * sizeof *fci.params);
@@ -1080,12 +1081,12 @@ static void construction_wrapper (INTERNAL_FUNCTION_PARAMETERS)
     fci_cache.object_ptr       = _this;
 
     zend_call_function(&fci, &fci_cache TSRMLS_CC);
-
     if (!EG(exception) && path_obj->constructed == 0)
         zend_throw_exception_ex(NULL, 0 TSRMLS_CC,
             "parent::__construct() must be called in %s::__construct()", this_ce->name);
 
     efree(fci.params);
+    zval_ptr_dtor(&retval_ptr);
 }
 /* ----------------------------------------------------------------
   Win\Gdi\Path Lifecycle functions

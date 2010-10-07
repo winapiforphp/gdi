@@ -22,7 +22,9 @@
 #include "php_wingdi.h"
 #include "zend_exceptions.h"
 
-zend_class_entry *ce_wingdi_elliptic_region;
+static zend_object_handlers object_handlers;
+static zend_class_entry     *ce_wingdi_elliptic_region;
+static zend_function        ctor_wrapper_func;
 
 /* ----------------------------------------------------------------
   Win\Gdi\Region\Elliptic Userland API                                                    
@@ -49,13 +51,14 @@ PHP_METHOD(WinGdiRegionElliptic, __construct)
         return;
     WINGDI_RESTORE_ERRORS()
 
-    reg_obj = (wingdi_region_object *)wingdi_region_object_get(getThis() TSRMLS_CC);
+    reg_obj = (wingdi_region_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
     reg_obj->region_handle = CreateEllipticRgn(left, top, right, bottom);
     if (reg_obj->region_handle == NULL)
     {
         wingdi_create_error(GetLastError(), ce_wingdi_exception TSRMLS_CC);
         return;
     }
+    reg_obj->constructed = 1;
 }
 /* }}} */
 
@@ -68,6 +71,68 @@ static const zend_function_entry wingdi_region_elliptic_functions[] = {
   Win\Gdi\Region\Elliptic LifeCycle Functions                                                    
 ------------------------------------------------------------------*/
 
+/* Override the default region constructor to change this region's handlers */
+static zend_object_value wingdi_region_elliptic_new (zend_class_entry * ce TSRMLS_DC)
+{
+    zend_object_value object = wingdi_region_object_new(ce TSRMLS_CC);
+
+    object.handlers = &object_handlers;
+
+    return object;
+}
+
+static zend_function * get_constructor (zval * object TSRMLS_DC)
+{
+    if (Z_OBJCE_P(object) == ce_wingdi_elliptic_region)
+    {
+        return zend_get_std_object_handlers()->get_constructor(object TSRMLS_CC);
+    }
+    else
+    {
+        return &ctor_wrapper_func;
+    }
+}
+
+
+static void construction_wrapper (INTERNAL_FUNCTION_PARAMETERS)
+{
+    zend_fcall_info_cache fci_cache = {0};
+    zend_fcall_info       fci       = {0};
+    zend_class_entry      *this_ce;
+    zend_function         *zf;
+    wingdi_path_object    *path_obj;
+    zval                  *_this      = getThis(),
+                          *retval_ptr = NULL;
+
+    path_obj = zend_object_store_get_object(_this TSRMLS_CC);
+    zf       = zend_get_std_object_handlers()->get_constructor(_this TSRMLS_CC);
+    this_ce  = Z_OBJCE_P(_this);
+
+    fci.size           = sizeof(fci);
+    fci.function_table = &this_ce->function_table;
+    fci.retval_ptr_ptr = &retval_ptr;
+    fci.object_ptr     = _this;
+    fci.param_count    = ZEND_NUM_ARGS();
+    fci.params         = emalloc(fci.param_count * sizeof *fci.params);
+    fci.no_separation  = 0;
+    _zend_get_parameters_array_ex(fci.param_count, fci.params TSRMLS_CC);
+
+    fci_cache.initialized      = 1;
+    fci_cache.called_scope     = EG(current_execute_data)->called_scope;
+    fci_cache.calling_scope    = EG(current_execute_data)->current_scope;
+    fci_cache.function_handler = zf;
+    fci_cache.object_ptr       = _this;
+
+    zend_call_function(&fci, &fci_cache TSRMLS_CC);
+
+    if (!EG(exception) && path_obj->constructed == 0)
+        zend_throw_exception_ex(NULL, 0 TSRMLS_CC,
+            "parent::__construct() must be called in %s::__construct()", this_ce->name);
+
+    efree(fci.params);
+    zval_ptr_dtor(&retval_ptr);
+}
+
 PHP_MINIT_FUNCTION(wingdi_region_elliptic)
 {
     zend_class_entry ce;
@@ -75,7 +140,22 @@ PHP_MINIT_FUNCTION(wingdi_region_elliptic)
     INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_REGION_NS, "Elliptic", wingdi_region_elliptic_functions);
     ce_wingdi_elliptic_region = 
         zend_register_internal_class_ex(&ce, ce_wingdi_region, PHP_WINGDI_REGION_NS TSRMLS_CC);
-    ce_wingdi_elliptic_region->create_object = wingdi_region_object_new;
+    ce_wingdi_elliptic_region->create_object = wingdi_region_elliptic_new;
+
+    memcpy(&object_handlers,
+        zend_get_std_object_handlers(), 
+        sizeof(zend_object_handlers));
+    object_handlers.get_constructor = get_constructor;
+
+    ctor_wrapper_func.type                 = ZEND_INTERNAL_FUNCTION;
+    ctor_wrapper_func.common.function_name = "internal_construction_wrapper";
+    ctor_wrapper_func.common.scope         = ce_wingdi_elliptic_region;
+    ctor_wrapper_func.common.fn_flags      = ZEND_ACC_PROTECTED;
+    ctor_wrapper_func.common.prototype     = NULL;
+    ctor_wrapper_func.common.required_num_args = 0;
+    ctor_wrapper_func.common.arg_info      = NULL;
+    ctor_wrapper_func.internal_function.handler = construction_wrapper;
+    ctor_wrapper_func.internal_function.module  = EG(current_module);
 
     return SUCCESS;
 }

@@ -64,17 +64,19 @@
 /* Class structs */
 typedef struct _wingdi_devicecontext_object {
 	zend_object  std;
-	HDC hdc;
-	HWND window_handle;
+    zend_bool    constructed;
+	HDC          hdc;
+	HWND         window_handle;
 	//HashTable *prop_handler;
 	zend_object_handle handle;
 } wingdi_devicecontext_object;
 
 typedef struct _wingdi_brush_object {
 	zend_object  std;
-	HBRUSH brush_handle;
-	BOOL system_brush;
-	HashTable *prop_handler;
+    zend_bool    constructed;
+	HBRUSH       brush_handle;
+	BOOL         system_brush;
+	HashTable    *prop_handler;
 	zend_object_handle handle;
 } wingdi_brush_object;
 
@@ -97,6 +99,7 @@ typedef struct _wingdi_path_object {
 
 typedef struct _wingdi_region_object {
 	zend_object std;
+    zend_bool   constructed;
 	HRGN		region_handle;
 	zend_object_handle handle;
 } wingdi_region_object;
@@ -108,79 +111,6 @@ void wingdi_create_error(int error, zend_class_entry *ce TSRMLS_DC);
 int  wingdi_juggle_type(zval *value, int type TSRMLS_DC);
 zend_object_value wingdi_region_object_new(zend_class_entry *ce TSRMLS_DC);
 
-static inline wingdi_bitmap_object * wingdi_bitmap_object_get(zval * zobj TSRMLS_DC)
-{
-	wingdi_bitmap_object * obj = zend_object_store_get_object(zobj TSRMLS_CC);
-    if (obj->bitmap_handle == NULL)
-    {
-        php_error(E_ERROR, "Internal bitmap handle missing in %s class, you must call parent::__construct() in extending classes", Z_OBJ_CLASS_NAME_P(zobj));
-        return NULL;
-    }
-	return obj;
-}
-
-static inline wingdi_brush_object * wingdi_brush_object_get(zval * zobj TSRMLS_DC)
-{
-	wingdi_brush_object * obj = zend_object_store_get_object(zobj TSRMLS_CC);
-    if (obj->brush_handle == NULL)
-    {
-        php_error(E_ERROR, "Internal brush handle missing in %s class, you must call parent::__construct() in extending classes", Z_OBJ_CLASS_NAME_P(zobj));
-        return NULL;
-    }
-	return obj;
-}
-
-/*
-static inline wingdi_color_object * wingdi_color_object_get(zval * zobj TSRMLS_DC)
-{
-	wingdi_color_object * obj = zend_object_store_get_object(zobj TSRMLS_CC);
-
-	return obj;
-}
-*/
-
-static inline wingdi_devicecontext_object * wingdi_devicecontext_object_get(zval * zobj TSRMLS_DC)
-{
-	wingdi_devicecontext_object * obj = zend_object_store_get_object(zobj TSRMLS_CC);
-    if (obj->hdc == NULL) 
-    {
-        php_error(E_ERROR, "Internal device context handle missing in %s class, you must call parent::__construct() in extending classes", Z_OBJ_CLASS_NAME_P(zobj));
-        return NULL;
-    }
-	return obj;
-}
-
-/*
-static inline wingdi_pen_object * wingdi_pen_object_get(zval * zobj TSRMLS_DC)
-{
-	wingdi_pen_object * obj = zend_object_store_get_object(zobj TSRMLS_CC);
-
-	return obj;
-}
-*/
-
-static inline wingdi_path_object * wingdi_path_object_get(zval * zobj TSRMLS_DC)
-{
-    wingdi_path_object * obj = zend_object_store_get_object(zobj TSRMLS_CC);
-    if (obj->device_context == NULL)
-    {
-        php_error(E_ERROR, "Internal device context handle missing in %s class, you must call parent::__construct() in extended classes", Z_OBJ_CLASS_NAME_P(zobj));
-        return NULL;
-    }
-    return obj;
-}
-
-static inline wingdi_region_object * wingdi_region_object_get(zval * zobj TSRMLS_DC)
-{
-	wingdi_region_object * obj = zend_object_store_get_object(zobj TSRMLS_CC);
-    if (obj->region_handle == NULL)
-    {
-        php_error(E_ERROR, "Internal region handle missing in %s class, you must call parent::__construct() in extending classes", Z_OBJ_CLASS_NAME_P(zobj));
-        return NULL;
-    }
-	return obj;
-}
-
 /* ----------------------------------------------------------------
   Class Entries                                              
 ------------------------------------------------------------------*/
@@ -189,7 +119,6 @@ extern zend_class_entry *ce_wingdi_argexception;
 extern zend_class_entry *ce_wingdi_versionexception;
 extern zend_class_entry *ce_wingdi_region;
 extern zend_class_entry *ce_wingdi_rect_region;
-//extern zend_class_entry *ce_wingdi_path;
 
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking                                                
