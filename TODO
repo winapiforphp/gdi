@@ -28,3 +28,8 @@ Path API:
  - Class constants
  - Tests
  - fillRectangle method should accept a Brush or a color value
+
+
+Random:
+GetTextCharset - http://msdn.microsoft.com/en-us/library/dd318125%28v=VS.85%29.aspx
+GetTextCharsetInfo - http://msdn.microsoft.com/en-us/library/dd318126%28v=VS.85%29.aspx

@@ -118,7 +118,7 @@ PHP_MINIT_FUNCTION(wingdi_util)
 	ce_wingdi_argexception = zend_register_internal_class_ex(&ce, spl_ce_InvalidArgumentException, "InvalidArgumentException" TSRMLS_CC);
 
 	INIT_NS_CLASS_ENTRY(version_ce, PHP_WINGDI_NS, "VersionException", NULL);
-	ce_wingdi_versionexception = zend_register_internal_class_ex(&version_ce, ce_wingdi_exception, ZEND_NS_NAME(PHP_WINGDI_NS, "Exception") TSRMLS_CC);
+	ce_wingdi_versionexception = zend_register_internal_class_ex(&version_ce, spl_ce_RuntimeException, "RuntimeException" TSRMLS_CC);
 
 	return SUCCESS;
 }

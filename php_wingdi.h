@@ -31,9 +31,9 @@
 #include "php.h"
 
 #ifdef PHP_WIN32
-#define PHP_WINSYSTEM_API __declspec(dllexport)
+#define PHP_WINGDI_API __declspec(dllexport)
 #else
-#define PHP_WINSYSTEM_API
+#define PHP_WINGDI_API
 #endif
 
 #ifdef ZTS
@@ -62,6 +62,12 @@
 ------------------------------------------------------------------*/
 
 /* Class structs */
+typedef struct _wingdi_window_object {
+	zend_object  std;
+	zend_bool    is_constructed;
+	HWND         handle;
+} wingdi_window_object;
+
 typedef struct _wingdi_devicecontext_object {
 	zend_object  std;
 	HDC hdc;
@@ -196,6 +202,7 @@ extern zend_class_entry *ce_wingdi_path;
 
 /* Lifecycle Function Declarations */
 PHP_MINIT_FUNCTION(wingdi_util);
+PHP_MINIT_FUNCTION(wingdi_window);
 PHP_MINIT_FUNCTION(wingdi_bitmap);
 PHP_MINIT_FUNCTION(wingdi_brush);
 PHP_MINIT_FUNCTION(wingdi_color);
