@@ -22,7 +22,8 @@
 #include "php_wingdi.h"
 #include "zend_exceptions.h" 
 
-zend_class_entry *ce_WinGdiDeviceContext; 
+zend_class_entry     *ce_WinGdiDeviceContext;
+zend_function        ctor_wrapper_func;
 zend_object_handlers wingdi_devicecontext_object_handlers;
 
 /* ----------------------------------------------------------------
@@ -288,7 +289,8 @@ PHP_METHOD(WinGdiDeviceContext, __construct)
 	DEVMODE lpInitData;
   	int drivername_len,
         devicename_len;
-	wingdi_devicecontext_object *context_object = (wingdi_devicecontext_object*)zend_objects_get_address(getThis() TSRMLS_CC);
+	wingdi_devicecontext_object *context_object = 
+        (wingdi_devicecontext_object*)zend_objects_get_address(getThis() TSRMLS_CC);
     zval *devmode_array = NULL;
 
 	WINGDI_ERROR_HANDLING();
@@ -307,7 +309,10 @@ PHP_METHOD(WinGdiDeviceContext, __construct)
 	context_object->hdc = CreateDC(drivername, devicename, NULL, &lpInitData);
 	if (context_object->hdc == NULL) {
 		zend_throw_exception(ce_wingdi_exception, "Error creating device context", 0 TSRMLS_CC);
+        return;
 	}
+
+    context_object->constructed = 1;
 }
 /* }}} */
 
@@ -343,6 +348,7 @@ PHP_METHOD(WinGdiDeviceContext, get)
 		Z_UNSET_ISREF_P(return_value); 
 		display_object = (wingdi_devicecontext_object*)zend_objects_get_address(return_value TSRMLS_CC);
 		display_object->hdc = hdc;
+        display_object->constructed = 1;
 	}
 	WINGDI_RESTORE_ERRORS()
 }
@@ -356,7 +362,8 @@ PHP_METHOD(WinGdiDeviceContext, get)
 PHP_METHOD(WinGdiDeviceContext, cancel)
 {
 	zval *object = getThis();
-	wingdi_devicecontext_object *context_object = (wingdi_devicecontext_object*)wingdi_devicecontext_object_get(object TSRMLS_CC);
+	wingdi_devicecontext_object *context_object = 
+        (wingdi_devicecontext_object*)zend_object_store_get_object(object TSRMLS_CC);
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
@@ -377,7 +384,8 @@ PHP_METHOD(WinGdiDeviceContext, save)
 {
 	int worked;
 	zval *object = getThis();
-	wingdi_devicecontext_object *context_object = (wingdi_devicecontext_object*)wingdi_devicecontext_object_get(object TSRMLS_CC);
+	wingdi_devicecontext_object *context_object = 
+        (wingdi_devicecontext_object*)zend_object_store_get_object(object TSRMLS_CC);
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
@@ -407,7 +415,8 @@ PHP_METHOD(WinGdiDeviceContext, restore)
 {
 	long savedstate = -1;
 	zval *object = getThis();
-	wingdi_devicecontext_object *context_object = (wingdi_devicecontext_object*)wingdi_devicecontext_object_get(object TSRMLS_CC);
+	wingdi_devicecontext_object *context_object = 
+        (wingdi_devicecontext_object*)zend_object_store_get_object(object TSRMLS_CC);
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &savedstate) == FAILURE) {
 		return;
@@ -541,17 +550,70 @@ zend_object_value wingdi_devicecontext_object_new(zend_class_entry *ce TSRMLS_DC
 	object->std.guards = NULL;
 	object->hdc = NULL;
 	object->window_handle = NULL;
+    object->constructed = 0;
 
 	ALLOC_HASHTABLE(object->std.properties);
 	zend_hash_init(object->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
 	zend_hash_copy(object->std.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
 
-	retval.handle = zend_objects_store_put(object, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t) wingdi_devicecontext_free_storage, NULL TSRMLS_CC);
-	object->handle = retval.handle;
+	retval.handle   = zend_objects_store_put(object, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t) wingdi_devicecontext_free_storage, NULL TSRMLS_CC);
+	object->handle  = retval.handle;
 	retval.handlers = &wingdi_devicecontext_object_handlers;
 	return retval;
 }
 /* }}} */
+
+static zend_function * get_constructor (zval * object TSRMLS_DC)
+{
+    if (Z_OBJCE_P(object) == ce_WinGdiDeviceContext)
+    {
+        return zend_get_std_object_handlers()->get_constructor(object TSRMLS_CC);
+    }
+    else
+    {
+        return &ctor_wrapper_func;
+    }
+}
+
+
+static void construction_wrapper (INTERNAL_FUNCTION_PARAMETERS)
+{
+    zend_fcall_info_cache fci_cache = {0};
+    zend_fcall_info       fci       = {0};
+    zend_class_entry      *this_ce;
+    zend_function         *zf;
+    wingdi_path_object    *path_obj;
+    zval                  *_this       = getThis(),
+                          *retval_ptr = NULL;
+
+    path_obj = zend_object_store_get_object(_this TSRMLS_CC);
+    zf       = zend_get_std_object_handlers()->get_constructor(_this TSRMLS_CC);
+    this_ce  = Z_OBJCE_P(_this);
+
+    fci.size           = sizeof(fci);
+    fci.function_table = &this_ce->function_table;
+    fci.retval_ptr_ptr = &retval_ptr;
+    fci.object_ptr     = _this;
+    fci.param_count    = ZEND_NUM_ARGS();
+    fci.params         = emalloc(fci.param_count * sizeof *fci.params);
+    fci.no_separation  = 0;
+    _zend_get_parameters_array_ex(fci.param_count, fci.params TSRMLS_CC);
+
+    fci_cache.initialized      = 1;
+    fci_cache.called_scope     = EG(current_execute_data)->called_scope;
+    fci_cache.calling_scope    = EG(current_execute_data)->current_scope;
+    fci_cache.function_handler = zf;
+    fci_cache.object_ptr       = _this;
+
+    zend_call_function(&fci, &fci_cache TSRMLS_CC);
+
+    if (!EG(exception) && path_obj->constructed == 0)
+        zend_throw_exception_ex(NULL, 0 TSRMLS_CC,
+            "parent::__construct() must be called in %s::__construct()", this_ce->name);
+
+    efree(fci.params);
+    zval_ptr_dtor(&retval_ptr);
+}
 
 /* ----------------------------------------------------------------
   \Win\Gdi\DeviceContext LifeCycle Functions                                                    
@@ -563,11 +625,24 @@ zend_object_value wingdi_devicecontext_object_new(zend_class_entry *ce TSRMLS_DC
 PHP_MINIT_FUNCTION(wingdi_devicecontext)
 {
 	zend_class_entry ce;
-	memcpy(&wingdi_devicecontext_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-
+	
 	INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_NS, "DeviceContext", wingdi_devicecontext_functions);
 	ce_WinGdiDeviceContext = zend_register_internal_class(&ce TSRMLS_CC);
-	ce_WinGdiDeviceContext->create_object  = wingdi_devicecontext_object_new;
+	ce_WinGdiDeviceContext->create_object = wingdi_devicecontext_object_new;
+
+    memcpy(&wingdi_devicecontext_object_handlers, zend_get_std_object_handlers(),
+        sizeof(wingdi_devicecontext_object_handlers));
+    wingdi_devicecontext_object_handlers.get_constructor = get_constructor;
+
+    ctor_wrapper_func.type                 = ZEND_INTERNAL_FUNCTION;
+    ctor_wrapper_func.common.function_name = "internal_construction_wrapper";
+    ctor_wrapper_func.common.scope         = ce_WinGdiDeviceContext;
+    ctor_wrapper_func.common.fn_flags      = ZEND_ACC_PROTECTED;
+    ctor_wrapper_func.common.prototype     = NULL;
+    ctor_wrapper_func.common.required_num_args = 0;
+    ctor_wrapper_func.common.arg_info      = NULL;
+    ctor_wrapper_func.internal_function.handler = construction_wrapper;
+    ctor_wrapper_func.internal_function.module  = EG(current_module);
 
 	//zend_declare_property_long(ce_WinGdiColor, "red", sizeof("red") - 1, 0, ZEND_ACC_PUBLIC TSRMLS_CC);
 	//zend_declare_property_long(ce_WinGdiColor, "green", sizeof("green") - 1, 0, ZEND_ACC_PUBLIC TSRMLS_CC);
