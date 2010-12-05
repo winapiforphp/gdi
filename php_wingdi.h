@@ -40,6 +40,9 @@
 #include "TSRM.h"
 #endif
 
+/* Externally useable APIS*/
+#include "php_wingdi_api.h"
+
 #define PHP_WINGDI_NS                ZEND_NS_NAME("Win", "Gdi")
 #define PHP_WINGDI_BITMAP_NS         ZEND_NS_NAME(PHP_WINGDI_NS, "Bitmap")
 #define PHP_WINGDI_BRUSH_NS          ZEND_NS_NAME(PHP_WINGDI_NS, "Brush")
@@ -76,15 +79,6 @@ typedef struct _wingdi_devicecontext_object {
 	//HashTable *prop_handler;
 	zend_object_handle handle;
 } wingdi_devicecontext_object;
-
-typedef struct _wingdi_brush_object {
-	zend_object  std;
-    zend_bool    constructed;
-	HBRUSH       brush_handle;
-	BOOL         system_brush;
-	HashTable    *prop_handler;
-	zend_object_handle handle;
-} wingdi_brush_object;
 
 typedef struct _wingdi_bitmap_object {
 	zend_object  std;
