@@ -22,7 +22,7 @@
 #include "php_wingdi.h"
 #include "zend_exceptions.h" 
 
-zend_class_entry     *ce_WinGdiDeviceContext;
+zend_class_entry     *ce_wingdi_devicecontext;
 zend_function        ctor_wrapper_func;
 zend_object_handlers wingdi_devicecontext_object_handlers;
 
@@ -279,8 +279,6 @@ static void _populate_devmode_from_hash (DEVMODE * data, HashTable * hash TSRMLS
 
 /* {{{ proto int \Win\Gdi\DeviceContext->construct([string devicename])
        Creates a new display context.
-
-	   Returns true on success, false on failure
  */
 PHP_METHOD(WinGdiDeviceContext, __construct)
 {
@@ -343,7 +341,7 @@ PHP_METHOD(WinGdiDeviceContext, get)
 		zend_throw_exception(ce_wingdi_argexception, "Error retrieving device context", 0 TSRMLS_CC);
 	} else {
 		/* Make our object a pretty return value */
-		object_init_ex(return_value, ce_WinGdiDeviceContext); 
+		object_init_ex(return_value, ce_wingdi_devicecontext); 
 		Z_SET_REFCOUNT_P(return_value, 1);
 		Z_UNSET_ISREF_P(return_value); 
 		display_object = (wingdi_devicecontext_object*)zend_objects_get_address(return_value TSRMLS_CC);
@@ -432,6 +430,99 @@ PHP_METHOD(WinGdiDeviceContext, restore)
 }
 /* }}} */
 
+/** {{{ proto object \Win\Gdi\DeviceContext::selectObject(object obj)
+        Selects obj into the device context.
+
+		If object is a region:
+			On success, returns SIMPLEREGION, COMPLEXREGION, or NULLREGION;
+			On failure, returns HGDI_ERROR
+		Other objects:
+			On success, returns the previously selected object (or NULL, if there was no object)
+			On failure, returns NULL.
+*/
+PHP_METHOD(WinGdiDeviceContext, selectObject)
+{
+	wingdi_devicecontext_object *dc_obj;
+	zval *in_obj;
+
+	WINGDI_ERROR_HANDLING();
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "o", &in_obj) == FAILURE)
+		return;
+	WINGDI_RESTORE_ERRORS();
+
+	dc_obj = (wingdi_devicecontext_object *) zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	if (Z_OBJCE_P(in_obj) == ce_wingdi_bitmap)
+	{
+		wingdi_bitmap_object *bitmap = zend_object_store_get_object(in_obj TSRMLS_CC);
+
+		if (SelectObject(dc_obj->hdc, bitmap->bitmap_handle) == NULL)
+		{
+			php_error(E_ERROR, "SelectObject failed");
+			return;
+		}
+
+		RETVAL_ZVAL(dc_obj->bitmap, 0, 0);
+		dc_obj->bitmap = in_obj;
+	}
+	else if (Z_OBJCE_P(in_obj) == ce_wingdi_brush)
+	{
+		wingdi_brush_object *brush = zend_object_store_get_object(in_obj TSRMLS_CC);
+
+		if (SelectObject(dc_obj->hdc, brush->brush_handle) == NULL)
+		{
+			php_error(E_ERROR, "SelectObject failed");
+			return;
+		}
+
+		RETVAL_ZVAL(dc_obj->brush, 0, 0);
+		dc_obj->brush = in_obj;
+	}
+	//else if (Z_OBJCE_P(in_obj) == ce_wingdi_font)
+	//{
+	//	wingdi_font_object *font = zend_object_store_get_object(in_obj TSRMLS_CC);
+
+	//	if (SelectObject(dc_obj->hdc, font->font_handle) == NULL)
+	//	{
+	//		php_error(E_ERROR, "SelectObject failed");
+	//		return;
+	//	}
+
+	//	RETVAL_ZVAL(dc_obj->font, 0, 0);
+	//	dc_obj->font = in_obj;
+	//}
+	//else if (Z_OBJCE_P(in_obj) == ce_wingdi_pen)
+	//{
+	//	wingdi_pen_object *pen = zend_object_store_get_object(in_obj TSRMLS_CC);
+
+	//	if (SelectObject(dc_obj->hdc, pen->pen_handle) == NULL)
+	//	{
+	//		php_error(E_ERROR, "SelectObject failed");
+	//		return;
+	//	}
+
+	//	RETVAL_ZVAL(dc_obj->pen, 0, 0);
+	//	dc_obj->pen = in_obj;
+	//}
+	else if (Z_OBJCE_P(in_obj) == ce_wingdi_region)
+	{
+		wingdi_region_object *region = zend_object_store_get_object(in_obj TSRMLS_CC);
+		HGDIOBJ result               = SelectObject(dc_obj->hdc, region->region_handle);
+
+		if (result == HGDI_ERROR)
+		{
+			php_error(E_ERROR, "SelectObject failed");
+			return;
+		}
+
+		RETURN_LONG(HandleToLong(result));
+	}
+	else
+	{
+		php_error(E_ERROR, "got unexpected object %s", Z_OBJ_CLASS_NAME_P(in_obj));
+	}
+}
+
 PHP_METHOD(WinGdiDeviceContext, getDisplayDevice)
 {
     DISPLAY_DEVICE display_device_data;
@@ -487,6 +578,179 @@ PHP_METHOD(WinGdiDeviceContext, changeDisplaySettings)
     RETURN_LONG(ChangeDisplaySettings(&data, flags));
 }
 
+/** {{{ proto int Win\Gdi\DeviceContext::getBkMode()
+        Returns the current background mix mode for the device context.
+*/
+PHP_METHOD(WinGdiDeviceContext, getBkMode)
+{
+	wingdi_devicecontext_object *dc = zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	WINGDI_ERROR_HANDLING();
+	if (zend_parse_parameters_none() == FAILURE)
+		return;
+	WINGDI_RESTORE_ERRORS();
+
+	RETURN_LONG(GetBkMode(dc->hdc));
+}
+/** }}} */
+
+/** {{{ proto int Win\Gdi\DeviceContext::setBkMode(int mode)
+		Sets the background mix mode for the device context.
+*/
+PHP_METHOD(WinGdiDeviceContext, setBkMode)
+{
+	wingdi_devicecontext_object *dc = zend_object_store_get_object(getThis() TSRMLS_CC);
+	long mode;
+
+	WINGDI_ERROR_HANDLING();
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &mode) == FAILURE)
+		return;
+	WINGDI_RESTORE_ERRORS();
+
+	RETURN_LONG(SetBkMode(dc->hdc, mode));
+}
+/** }}} */
+
+/** {{{ proto int Win\Gdi\DeviceContext::getROP2()
+		Retrieves the foreground mix mode for the device context.
+*/
+PHP_METHOD(WinGdiDeviceContext, getROP2)
+{
+	wingdi_devicecontext_object *dc = zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	WINGDI_ERROR_HANDLING();
+	if (zend_parse_parameters_none() == FAILURE)
+		return;
+	WINGDI_RESTORE_ERRORS();
+
+	RETURN_LONG(GetROP2(dc->hdc));
+}
+/** }}} */
+
+/** {{{ proto int Win\Gdi\DeviceContext::setROP2(int mode)
+		Sets the foreground mix mode for the device context.
+*/
+PHP_METHOD(WinGdiDeviceContext, setROP2)
+{
+	wingdi_devicecontext_object *dc = zend_object_store_get_object(getThis() TSRMLS_CC);
+	long mode;
+
+	WINGDI_ERROR_HANDLING();
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &mode) == FAILURE)
+		return;
+	WINGDI_RESTORE_ERRORS();
+
+	RETURN_LONG(SetROP2(dc->hdc, mode));
+}
+/** }}} */
+
+/** {{{ proto int Win\Gdi\DeviceContext::getMapMode()
+		Retrieves the mapping mode for the device context.
+*/
+PHP_METHOD(WinGdiDeviceContext, getMapMode)
+{
+	wingdi_devicecontext_object *dc = zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	WINGDI_ERROR_HANDLING();
+	if (zend_parse_parameters_none() == FAILURE)
+		return;
+	WINGDI_RESTORE_ERRORS();
+
+	RETURN_LONG(GetMapMode(dc->hdc));
+}
+/** }}} */
+
+/** {{{ proto int Win\Gdi\DeviceContext::setMapMode(int mode)
+		Sets the mapping mode for the device context.
+*/
+PHP_METHOD(WinGdiDeviceContext, setMapMode)
+{
+	wingdi_devicecontext_object *dc = zend_object_store_get_object(getThis() TSRMLS_CC);
+	long mode;
+
+	WINGDI_ERROR_HANDLING();
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &mode) == FAILURE)
+		return;
+	WINGDI_RESTORE_ERRORS();
+
+	RETURN_LONG(SetMapMode(dc->hdc, mode));
+}
+/** }}} */
+
+/** {{{ proto int Win\Gdi\DeviceContext::getPolyFillMode()
+		Retrieves the polygon fill mode for the device context.
+*/
+PHP_METHOD(WinGdiDeviceContext, getPolyFillMode)
+{
+	wingdi_devicecontext_object *dc = zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	WINGDI_ERROR_HANDLING();
+	if (zend_parse_parameters_none() == FAILURE)
+		return;
+	WINGDI_RESTORE_ERRORS();
+
+	RETURN_LONG(GetPolyFillMode(dc->hdc));
+}
+/** }}} */
+
+/** {{{ proto int Win\Gdi\DeviceContext::setPolyFillMode(int mode)
+		Sets the polygon fill mode for the device context.
+*/
+PHP_METHOD(WinGdiDeviceContext, setPolyFillMode)
+{
+	wingdi_devicecontext_object *dc = zend_object_store_get_object(getThis() TSRMLS_CC);
+	long mode;
+
+	WINGDI_ERROR_HANDLING();
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &mode) == FAILURE)
+		return;
+	WINGDI_RESTORE_ERRORS();
+
+	RETURN_LONG(SetPolyFillMode(dc->hdc, mode));
+}
+/** }}} */
+
+/** {{{ proto int Win\Gdi\DeviceContext::getStretchBltMode()
+		Retrieves the current stretching mode for the device context.
+*/
+PHP_METHOD(WinGdiDeviceContext, getStretchBltMode)
+{
+	wingdi_devicecontext_object *dc = zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	WINGDI_ERROR_HANDLING();
+	if (zend_parse_parameters_none() == FAILURE)
+		return;
+	WINGDI_RESTORE_ERRORS();
+
+	RETURN_LONG(GetStretchBltMode(dc->hdc));
+}
+/** }}} */
+
+/** {{{ proto int Win\Gdi\DeviceContext::setStretchBltMode(int mode)
+		Sets the current stretching mode for the device context.
+*/
+PHP_METHOD(WinGdiDeviceContext, setStretchBltMode)
+{
+	wingdi_devicecontext_object *dc = zend_object_store_get_object(getThis() TSRMLS_CC);
+	long mode;
+	int  status;
+
+	WINGDI_ERROR_HANDLING();
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &mode) == FAILURE)
+		return;
+	WINGDI_RESTORE_ERRORS();
+
+	status = SetStretchBltMode(dc->hdc, mode);
+	if (status == 0 || status == ERROR_INVALID_PARAMETER)
+	{
+		wingdi_create_error(GetLastError(), ce_wingdi_exception TSRMLS_CC);
+		return;
+	}
+
+	RETURN_LONG(status)
+}
+/** }}} */
+
 /* {{{ Method definitions */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_wingdi_devicecontext___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, devicename)
@@ -502,8 +766,15 @@ static const zend_function_entry wingdi_devicecontext_functions[] = {
 	PHP_ME(WinGdiDeviceContext, cancel, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(WinGdiDeviceContext, save, NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(WinGdiDeviceContext, restore, arginfo_wingdi_devicecontext_restore, ZEND_ACC_PUBLIC)
+	PHP_ME(WinGdiDeviceContext, selectObject, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(WinGdiDeviceContext, getDisplayDevice, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
     PHP_ME(WinGdiDeviceContext, changeDisplaySettings, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+	PHP_ME(WinGdiDeviceContext, getBkMode, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(WinGdiDeviceContext, setBkMode, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(WinGdiDeviceContext, getROP2, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(WinGdiDeviceContext, setROP2, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(WinGdiDeviceContext, getPolyFillMode, NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(WinGdiDeviceContext, setPolyFillMode, NULL, ZEND_ACC_PUBLIC)
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -545,12 +816,19 @@ zend_object_value wingdi_devicecontext_object_new(zend_class_entry *ce TSRMLS_DC
 	wingdi_devicecontext_object *object;
 	zval *tmp;
 
-	object = emalloc(sizeof(wingdi_devicecontext_object));
-	object->std.ce = ce;
-	object->std.guards = NULL;
-	object->hdc = NULL;
+	object                = emalloc(sizeof(wingdi_devicecontext_object));
+	object->std.ce        = ce;
+	object->std.guards    = NULL;
+	object->hdc           = NULL;
 	object->window_handle = NULL;
-    object->constructed = 0;
+    object->constructed   = 0;
+	
+	object->bitmap = NULL;
+	object->brush  = NULL;
+	object->font   = NULL;
+	object->path   = NULL;
+	object->pen    = NULL;
+	object->region = NULL;
 
 	ALLOC_HASHTABLE(object->std.properties);
 	zend_hash_init(object->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
@@ -565,7 +843,7 @@ zend_object_value wingdi_devicecontext_object_new(zend_class_entry *ce TSRMLS_DC
 
 static zend_function * get_constructor (zval * object TSRMLS_DC)
 {
-    if (Z_OBJCE_P(object) == ce_WinGdiDeviceContext)
+    if (Z_OBJCE_P(object) == ce_wingdi_devicecontext)
     {
         return zend_get_std_object_handlers()->get_constructor(object TSRMLS_CC);
     }
@@ -583,7 +861,7 @@ static void construction_wrapper (INTERNAL_FUNCTION_PARAMETERS)
     zend_class_entry      *this_ce;
     zend_function         *zf;
     wingdi_path_object    *path_obj;
-    zval                  *_this       = getThis(),
+    zval                  *_this      = getThis(),
                           *retval_ptr = NULL;
 
     path_obj = zend_object_store_get_object(_this TSRMLS_CC);
@@ -627,8 +905,8 @@ PHP_MINIT_FUNCTION(wingdi_devicecontext)
 	zend_class_entry ce;
 	
 	INIT_NS_CLASS_ENTRY(ce, PHP_WINGDI_NS, "DeviceContext", wingdi_devicecontext_functions);
-	ce_WinGdiDeviceContext = zend_register_internal_class(&ce TSRMLS_CC);
-	ce_WinGdiDeviceContext->create_object = wingdi_devicecontext_object_new;
+	ce_wingdi_devicecontext = zend_register_internal_class(&ce TSRMLS_CC);
+	ce_wingdi_devicecontext->create_object = wingdi_devicecontext_object_new;
 
     memcpy(&wingdi_devicecontext_object_handlers, zend_get_std_object_handlers(),
         sizeof(wingdi_devicecontext_object_handlers));
@@ -636,7 +914,7 @@ PHP_MINIT_FUNCTION(wingdi_devicecontext)
 
     ctor_wrapper_func.type                 = ZEND_INTERNAL_FUNCTION;
     ctor_wrapper_func.common.function_name = "internal_construction_wrapper";
-    ctor_wrapper_func.common.scope         = ce_WinGdiDeviceContext;
+    ctor_wrapper_func.common.scope         = ce_wingdi_devicecontext;
     ctor_wrapper_func.common.fn_flags      = ZEND_ACC_PROTECTED;
     ctor_wrapper_func.common.prototype     = NULL;
     ctor_wrapper_func.common.required_num_args = 0;
@@ -644,10 +922,42 @@ PHP_MINIT_FUNCTION(wingdi_devicecontext)
     ctor_wrapper_func.internal_function.handler = construction_wrapper;
     ctor_wrapper_func.internal_function.module  = EG(current_module);
 
-	//zend_declare_property_long(ce_WinGdiColor, "red", sizeof("red") - 1, 0, ZEND_ACC_PUBLIC TSRMLS_CC);
-	//zend_declare_property_long(ce_WinGdiColor, "green", sizeof("green") - 1, 0, ZEND_ACC_PUBLIC TSRMLS_CC);
-	//zend_declare_property_long(ce_WinGdiColor, "blue", sizeof("blue") - 1, 0, ZEND_ACC_PUBLIC TSRMLS_CC);
-	//zend_declare_property_long(ce_WinGdiColor, "hex", sizeof("hex") - 1, 0, ZEND_ACC_PUBLIC TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "OPAQUE", sizeof("OPAQUE") - 1, OPAQUE TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "TRANSPARENT", sizeof("TRANSPARENT") - 1, TRANSPARENT TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_BLACK", sizeof("R2_BLACK") - 1, R2_BLACK TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_COPYPEN", sizeof("R2_COPYPEN") - 1, R2_COPYPEN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_MASKNOTPEN", sizeof("R2_MASKNOTPEN") - 1, R2_MASKNOTPEN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_MASKPEN", sizeof("R2_MASKPEN") - 1, R2_MASKPEN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_MASKPENNOT", sizeof("R2_MASKPENNOT") - 1, R2_MASKPENNOT TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_MERGEPENNOT", sizeof("R2_MERGEPENNOT") - 1, R2_MERGEPENNOT TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_MERGENOTPEN", sizeof("R2_MERGENOTPEN") - 1, R2_MERGENOTPEN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_MERGEPEN", sizeof("R2_MERGEPEN") - 1, R2_MERGEPEN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_NOP", sizeof("R2_NOP") - 1, R2_NOP TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_NOT", sizeof("R2_NOT") - 1, R2_NOT TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_NOTCOPYPEN", sizeof("R2_NOTCOPYPEN") - 1, R2_NOTCOPYPEN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_NOTMASKPEN", sizeof("R2_NOTMASKPEN") - 1, R2_NOTMASKPEN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_NOTMERGEPEN", sizeof("R2_NOTMERGEPEN") - 1, R2_NOTMERGEPEN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_NOTXORPEN", sizeof("R2_NOTXORPEN") - 1, R2_NOTXORPEN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_WHITE", sizeof("R2_WHITE") - 1, R2_WHITE TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "R2_XORPEN", sizeof("R2_XORPEN") - 1, R2_XORPEN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "MM_ANISOTROPIC", sizeof("MM_ANISOTROPIC") - 1, MM_ANISOTROPIC TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "MM_HIENGLISH", sizeof("MM_HIENGLISH") - 1, MM_HIENGLISH TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "MM_HIMETRIC", sizeof("MM_HIMETRIC") - 1, MM_HIMETRIC TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "MM_ISOTROPIC", sizeof("MM_ISOTROPIC") - 1, MM_ISOTROPIC TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "MM_LOENGLISH", sizeof("MM_LOENGLISH") - 1, MM_LOENGLISH TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "MM_LOMETRIC", sizeof("MM_LOMETRIC") - 1, MM_LOMETRIC TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "MM_TEXT", sizeof("MM_TEXT") - 1, MM_TEXT TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "MM_TWIPS", sizeof("MM_TWIPS") - 1, MM_TWIPS TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "ALTERNATE", sizeof("ALTERNATE") - 1, ALTERNATE TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "WINDING", sizeof("WINDING") - 1, WINDING TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "BLACKONWHITE", sizeof("BLACKONWHITE") - 1, BLACKONWHITE TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "COLORONCOLOR", sizeof("COLORONCOLOR") - 1, COLORONCOLOR TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "HALFTONE", sizeof("HALFTONE") - 1, HALFTONE TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "STRETCH_ANDSCANS", sizeof("STRETCH_ANDSCANS") - 1, STRETCH_ANDSCANS TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "STRETCH_DELETESCANS", sizeof("STRETCH_DELETESCANS") - 1, STRETCH_DELETESCANS TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "STRETCH_HALFTONE", sizeof("STRETCH_HALFTONE") - 1, STRETCH_HALFTONE TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "STRETCH_ORSCANS", sizeof("STRETCH_ORSCANS") - 1, STRETCH_ORSCANS TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "WHITEONBLACK", sizeof("WHITEONBLACK") - 1, WHITEONBLACK TSRMLS_CC);
 
 	return SUCCESS;
 }

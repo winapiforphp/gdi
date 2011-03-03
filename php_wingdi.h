@@ -78,6 +78,15 @@ typedef struct _wingdi_devicecontext_object {
 	HWND         window_handle;
 	//HashTable *prop_handler;
 	zend_object_handle handle;
+
+	// The DC's graphics objects are cached here. DC::selectObject() should return
+	// the previously selected object, a la SelectObject().
+	zval *bitmap;
+	zval *brush;
+	zval *font;
+	zval *path;
+	zval *pen;
+	zval *region;
 } wingdi_devicecontext_object;
 
 typedef struct _wingdi_bitmap_object {
@@ -117,6 +126,8 @@ zend_object_value wingdi_region_object_new(zend_class_entry *ce TSRMLS_DC);
 extern zend_class_entry *ce_wingdi_exception;
 extern zend_class_entry *ce_wingdi_argexception;
 extern zend_class_entry *ce_wingdi_versionexception;
+extern zend_class_entry *ce_wingdi_bitmap;
+extern zend_class_entry *ce_wingdi_brush;
 extern zend_class_entry *ce_wingdi_region;
 extern zend_class_entry *ce_wingdi_rect_region;
 

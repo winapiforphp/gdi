@@ -3,6 +3,8 @@ Region API:
  - General tidying up.
  - Write tests
  - implement Region\setRectangle 
+ - Region type constants (SIMPLEREGION, etc)
+ - Refactor code - lots of it is messy, in particular, the polygon stuff.
  
 Bitmap API:
  - Lots!
@@ -14,10 +16,10 @@ Color API:
  - Bits and Bobs!
  
 DeviceContext API:
- - Lots!
- - This really needs doing... lots of the other stuff depends on it,
-   and I can't write tests for that other stuff if this isn't working.
-   Man up, man up, man up!
+ - The getWhatever methods should be using wingdi_create_error() if 
+   the functions return 0. Currently they just return the return of the 
+   GetWhatever function.
+ - Should the MM_* constants, et al, be in this class?
  
 Pen API:
  - Lots!
