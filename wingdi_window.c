@@ -103,7 +103,7 @@ static void wingdi_window_object_free(void *object TSRMLS_DC)
 
 	zend_object_std_dtor(&window_object->std TSRMLS_CC);
 
-	if(window_object->handle) {
+	if(window_object->window_handle) {
 		// TODO: FREE ME
 	}
 	
@@ -120,7 +120,7 @@ static zend_object_value wingdi_window_object_create(zend_class_entry *ce TSRMLS
  
 	window_object = ecalloc(1, sizeof(wingdi_window_object));
     zend_object_std_init((zend_object *) window_object, ce TSRMLS_CC);
-	window_object->handle = NULL;
+	window_object->window_handle = NULL;
 	window_object->is_constructed = FALSE;
  
     zend_hash_copy(window_object->std.properties, &(ce->default_properties),

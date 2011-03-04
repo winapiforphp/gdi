@@ -68,7 +68,8 @@
 typedef struct _wingdi_window_object {
 	zend_object  std;
 	zend_bool    is_constructed;
-	HWND         handle;
+	HashTable    *prop_handler;
+	HWND         window_handle;
 } wingdi_window_object;
 
 typedef struct _wingdi_devicecontext_object {
@@ -135,9 +136,11 @@ extern zend_class_entry *ce_wingdi_exception;
 extern zend_class_entry *ce_wingdi_argexception;
 extern zend_class_entry *ce_wingdi_versionexception;
 extern zend_class_entry *ce_wingdi_bitmap;
-extern PHP_WINGDI_API zend_class_entry *ce_wingdi_brush;
 extern zend_class_entry *ce_wingdi_region;
 extern zend_class_entry *ce_wingdi_rect_region;
+
+extern PHP_WINGDI_API zend_class_entry *ce_wingdi_brush;
+extern PHP_WINGDI_API zend_class_entry *ce_wingdi_window;
 
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking                                                

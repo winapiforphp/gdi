@@ -41,7 +41,8 @@
 typedef struct _wingdi_window_object {
 	zend_object  std;
 	zend_bool    is_constructed;
-	HWND         handle;
+	HashTable    *prop_handler;
+	HWND         window_handle;
 } wingdi_window_object;
 
 typedef struct _wingdi_brush_object {
