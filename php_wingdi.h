@@ -41,7 +41,7 @@
 #endif
 
 /* Externally useable APIS*/
-#include "php_wingdi_api.h"
+//#include "php_wingdi_api.h"
 
 #define PHP_WINGDI_NS                ZEND_NS_NAME("Win", "Gdi")
 #define PHP_WINGDI_BITMAP_NS         ZEND_NS_NAME(PHP_WINGDI_NS, "Bitmap")
@@ -113,6 +113,14 @@ typedef struct _wingdi_region_object {
 	zend_object_handle handle;
 } wingdi_region_object;
 
+typedef struct _wingdi_brush_object {
+	zend_object	std;
+	zend_bool	is_constructed;
+	HBRUSH		brush_handle;
+	BOOL		system_brush;
+	HashTable	*prop_handler;
+} wingdi_brush_object;
+
 /* ----------------------------------------------------------------
   C API                                             
 ------------------------------------------------------------------*/
@@ -127,7 +135,7 @@ extern zend_class_entry *ce_wingdi_exception;
 extern zend_class_entry *ce_wingdi_argexception;
 extern zend_class_entry *ce_wingdi_versionexception;
 extern zend_class_entry *ce_wingdi_bitmap;
-extern zend_class_entry *ce_wingdi_brush;
+extern PHP_WINGDI_API zend_class_entry *ce_wingdi_brush;
 extern zend_class_entry *ce_wingdi_region;
 extern zend_class_entry *ce_wingdi_rect_region;
 

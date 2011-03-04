@@ -22,9 +22,9 @@
 #include <zend_exceptions.h>
 
 /* Custom Object junk */
-static zend_class_entry     *ce_wingdi_brush;
-static zend_object_handlers wingdibrush_object_handlers;
-static zend_function        ctor_wrapper_func;
+PHP_WINGDI_API zend_class_entry *ce_wingdi_brush;
+static zend_object_handlers     wingdibrush_object_handlers;
+static zend_function            ctor_wrapper_func;
 
 void wingdibrush_write_property(zval *object, zval *member, zval *value TSRMLS_DC);
 zval *wingdibrush_read_property(zval *object, zval *member, int type TSRMLS_DC);

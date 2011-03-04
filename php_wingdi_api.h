@@ -24,8 +24,26 @@
 #endif
 
 /* ----------------------------------------------------------------
+  Namespace definitions
+------------------------------------------------------------------*/
+#define PHP_WINGDI_NS                ZEND_NS_NAME("Win", "Gdi")
+#define PHP_WINGDI_BITMAP_NS         ZEND_NS_NAME(PHP_WINGDI_NS, "Bitmap")
+#define PHP_WINGDI_BRUSH_NS          ZEND_NS_NAME(PHP_WINGDI_NS, "Brush")
+#define PHP_WINGDI_COLOR_NS          ZEND_NS_NAME(PHP_WINGDI_NS, "Color")
+#define PHP_WINGDI_DISPLAYCONTEXT_NS ZEND_NS_NAME(PHP_WINGDI_NS, "DeviceContext")
+#define PHP_WINGDI_PEN_NS            ZEND_NS_NAME(PHP_WINGDI_NS, "Pen")
+#define PHP_WINGDI_REGION_NS         ZEND_NS_NAME(PHP_WINGDI_NS, "Region")
+#define PHP_WINGDI_REGION_POLY_NS    ZEND_NS_NAME(PHP_WINGDI_REGION_NS, "Polygon")
+
+/* ----------------------------------------------------------------
   Typedefs
 ------------------------------------------------------------------*/
+typedef struct _wingdi_window_object {
+	zend_object  std;
+	zend_bool    is_constructed;
+	HWND         handle;
+} wingdi_window_object;
+
 typedef struct _wingdi_brush_object {
 	zend_object	std;
 	zend_bool	is_constructed;
@@ -37,6 +55,7 @@ typedef struct _wingdi_brush_object {
 /* ----------------------------------------------------------------
   Exported Class Entries
 ------------------------------------------------------------------*/
+extern PHP_WINGDI_API zend_class_entry *ce_wingdi_window;
 extern PHP_WINGDI_API zend_class_entry *ce_wingdi_brush;
 
 #endif

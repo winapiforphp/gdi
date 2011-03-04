@@ -20,8 +20,8 @@
 #include "zend_exceptions.h"
 
 PHP_WINGDI_API zend_class_entry *ce_wingdi_window;
-static zend_object_handlers wingdi_window_object_handlers;
-static zend_function wingdi_window_constructor_wrapper;
+static zend_object_handlers     wingdi_window_object_handlers;
+static zend_function            wingdi_window_constructor_wrapper;
 
 /* ----------------------------------------------------------------
   Win\Gdi\Window Userland API                                                      
