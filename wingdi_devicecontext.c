@@ -314,40 +314,55 @@ PHP_METHOD(WinGdiDeviceContext, __construct)
 }
 /* }}} */
 
-/* {{{ proto \Win\Gdi\DeviceContext object \Win\Gdi\DeviceContext::get([object window])
-       Retrieves the display context for a specified window.
+/* {{{ proto \Win\Gdi\DeviceContext object \Win\Gdi\DeviceContext::get([Win\Gdi\Window window[, Win\Gdi\Region region[, int flags]]])
+       Retrieves the display context for a specified window. Can accept a clipping region and flags.
 
 	   This is basically a static constructor for DeviceContext that retrieves an existing
 	   DC instead of creating a new one from scratch.
  */
 PHP_METHOD(WinGdiDeviceContext, get)
 {
-	HDC hdc = NULL;
+	HDC hdc            = NULL;
 	HWND window_handle = NULL;
-	HRGN clip_region = NULL;
-	DWORD flags = 0;
+	HRGN clip_region   = NULL;
+	DWORD flags        = 0;
 	wingdi_devicecontext_object *display_object;
+	wingdi_window_object        *window_object;
+	wingdi_region_object        *region_object;
+	zval                        *region_object_zval = NULL, 
+	                            *window_object_zval = NULL;
 
 	WINGDI_ERROR_HANDLING()
 
 	/* Passing no parameters or null is fine, you get the desktop, otherwise get a window handle */
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|OOl", &window_object_zval, ce_wingdi_window, &region_object_zval, ce_wingdi_region, &flags) == FAILURE) {
 		return;
 	}
 
-	/* TODO: support parameters */
-	hdc = GetDCEx(window_handle, clip_region, flags);
+	if (window_object_zval)
+	{
+		window_object = (wingdi_window_object *) zend_object_store_get_object(window_object_zval TSRMLS_CC);
+		window_handle = window_object->window_handle;
+	}
+	if (region_object_zval)
+	{
+		region_object = (wingdi_region_object *) zend_object_store_get_object(region_object_zval TSRMLS_CC);
+		clip_region   = region_object->region_handle;
+	}
+
+	hdc = GetDCEx(window_handle, clip_region, DCX_CACHE);
 	if (hdc == NULL) {
-		zend_throw_exception(ce_wingdi_argexception, "Error retrieving device context", 0 TSRMLS_CC);
+		zend_throw_exception(ce_wingdi_argexception, "Error retrieving device cont	ext", 0 TSRMLS_CC);
 	} else {
 		/* Make our object a pretty return value */
 		object_init_ex(return_value, ce_wingdi_devicecontext); 
 		Z_SET_REFCOUNT_P(return_value, 1);
 		Z_UNSET_ISREF_P(return_value); 
-		display_object = (wingdi_devicecontext_object*)zend_objects_get_address(return_value TSRMLS_CC);
+		display_object = (wingdi_devicecontext_object *) zend_objects_get_address(return_value TSRMLS_CC);
 		display_object->hdc = hdc;
         display_object->constructed = 1;
 	}
+
 	WINGDI_RESTORE_ERRORS()
 }
 /* }}} */
@@ -958,6 +973,17 @@ PHP_MINIT_FUNCTION(wingdi_devicecontext)
 	zend_declare_class_constant_long(ce_wingdi_devicecontext, "STRETCH_HALFTONE", sizeof("STRETCH_HALFTONE") - 1, STRETCH_HALFTONE TSRMLS_CC);
 	zend_declare_class_constant_long(ce_wingdi_devicecontext, "STRETCH_ORSCANS", sizeof("STRETCH_ORSCANS") - 1, STRETCH_ORSCANS TSRMLS_CC);
 	zend_declare_class_constant_long(ce_wingdi_devicecontext, "WHITEONBLACK", sizeof("WHITEONBLACK") - 1, WHITEONBLACK TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "DCX_WINDOW", sizeof("DCX_WINDOW") - 1, DCX_WINDOW TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "DCX_CACHE", sizeof("DCX_CACHE") - 1, DCX_CACHE TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "DCX_PARENTCLIP", sizeof("DCX_PARENTCLIP") - 1, DCX_PARENTCLIP TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "DCX_CLIPSIBLINGS", sizeof("DCX_CLIPSIBLINGS") - 1, DCX_CLIPSIBLINGS TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "DCX_CLIPCHILDREN", sizeof("DCX_CLIPCHILDREN") - 1, DCX_CLIPCHILDREN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "DCX_NORESETATTRS", sizeof("DCX_NORESETATTRS") - 1, DCX_NORESETATTRS TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "DCX_LOCKWINDOWUPDATE", sizeof("DCX_LOCKWINDOWUPDATE") - 1, DCX_LOCKWINDOWUPDATE TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "DCX_EXCLUDERGN", sizeof("DCX_EXCLUDERGN") - 1, DCX_EXCLUDERGN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "DCX_INTERSECTRGN", sizeof("DCX_INTERSECTRGN") - 1, DCX_INTERSECTRGN TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "DCX_INTERSECTUPDATE", sizeof("DCX_INTERSECTUPDATE") - 1, DCX_INTERSECTUPDATE TSRMLS_CC);
+	zend_declare_class_constant_long(ce_wingdi_devicecontext, "DCX_VALIDATE", sizeof("DCX_VALIDATE") - 1, DCX_VALIDATE TSRMLS_CC);
 
 	return SUCCESS;
 }
