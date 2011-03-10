@@ -138,6 +138,7 @@ extern zend_class_entry *ce_wingdi_versionexception;
 extern zend_class_entry *ce_wingdi_bitmap;
 extern zend_class_entry *ce_wingdi_region;
 extern zend_class_entry *ce_wingdi_rect_region;
+extern zend_class_entry *ce_wingdi_devicecontext;
 
 extern PHP_WINGDI_API zend_class_entry *ce_wingdi_brush;
 extern PHP_WINGDI_API zend_class_entry *ce_wingdi_window;
