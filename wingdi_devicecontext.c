@@ -548,7 +548,7 @@ PHP_METHOD(WinGdiDeviceContext, getDisplayDevice)
     zval *z_device;
 
     WINGDI_ERROR_HANDLING();
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz", &z_device, &flags) != SUCCESS)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|z", &z_device, &flags) != SUCCESS)
         return;
     WINGDI_RESTORE_ERRORS();
 
