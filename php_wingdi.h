@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2011 The PHP Group                                |
+  | Copyright (c) 1997-2012 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -21,11 +21,8 @@
 #ifndef PHP_WINGDI_H
 #define PHP_WINGDI_H
 
-/* Tell the compiler we're XP and higher */
-#define _WIN32_WINNT                     0x0600
-
 /* version info file */
-#include "wingdi_version.h"
+#include "version.h"
 
 /* Needed PHP includes */
 #include "php.h"
@@ -39,9 +36,6 @@
 #ifdef ZTS
 #include "TSRM.h"
 #endif
-
-/* Externally useable APIS*/
-//#include "php_wingdi_api.h"
 
 #define PHP_WINGDI_NS                ZEND_NS_NAME("Win", "Gdi")
 #define PHP_WINGDI_BITMAP_NS         ZEND_NS_NAME(PHP_WINGDI_NS, "Bitmap")

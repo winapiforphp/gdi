@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2007-2011 Elizabeth M. Smith, Sara Golemon, Tom Rogers |
+  | Copyright (c) 1997-2012 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -12,15 +12,22 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Elizabeth M. Smith <auroraeosrose@php.net>                   |
+  | Author: Elizabeth Smith <auroraeosrose@gmail.net>                    |
   |         Mark G. Skilbeck   <markskilbeck@php.net>                    |
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #include "php_wingdi.h"
-#include "ext/standard/info.h"
+
+/* ----------------------------------------------------------------
+  \Win\Gdi LifeCycle Functions
+------------------------------------------------------------------*/
+
+/* Requires winsystem  */
+static const zend_module_dep wingdi_deps[] = {
+	ZEND_MOD_REQUIRED("winsystem")
+	ZEND_MOD_END
+};
 
 PHP_MINIT_FUNCTION(wingdi)
 {
@@ -36,26 +43,18 @@ PHP_MINIT_FUNCTION(wingdi)
 	return SUCCESS;
 }
 
-/* Basic information */
-PHP_MINFO_FUNCTION(wingdi)
-{
-	php_info_print_table_start();
-	php_info_print_table_row(2, "Win32 GDI", "enabled");
-	php_info_print_table_row(2, "Version", PHP_WINGDI_VERSION);
-	php_info_print_table_row(2, "Hg", "$Id$");
-	php_info_print_table_end();
-}
-
 /* Module entry for wingdi */
 zend_module_entry wingdi_module_entry = {
-	STANDARD_MODULE_HEADER,
+	STANDARD_MODULE_HEADER_EX,
+	NULL,
+	wingdi_deps,
 	"wingdi",
 	NULL,
 	PHP_MINIT(wingdi),
 	NULL,
 	NULL,
 	NULL,
-	PHP_MINFO(wingdi),
+	NULL,
 	PHP_WINGDI_VERSION,
 	STANDARD_MODULE_PROPERTIES
 };

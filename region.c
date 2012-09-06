@@ -34,7 +34,6 @@ zend_object_value wingdi_region_object_new(zend_class_entry *ce TSRMLS_DC)
 {
 	zend_object_value    ret;
 	wingdi_region_object *reg;
-	zval                 *tmp;
 
 	reg = emalloc(sizeof(wingdi_region_object));
 	reg->std.ce = ce;
@@ -51,10 +50,7 @@ zend_object_value wingdi_region_object_new(zend_class_entry *ce TSRMLS_DC)
 	ret.handle   = reg->handle;
 	ret.handlers = zend_get_std_object_handlers();
 
-	ALLOC_HASHTABLE(reg->std.properties);
-	zend_hash_init(reg->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
-	zend_hash_copy(reg->std.properties, &ce->default_properties, 
-        (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+	object_properties_init(&reg->std, ce);
 
 	return ret;
 }

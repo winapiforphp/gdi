@@ -50,7 +50,6 @@ zend_object_value wingdibrush_new(zend_class_entry *ce TSRMLS_DC)
 {
 	wingdi_brush_object *object;
 	zend_object_value   retval;
-	zval tmp;
 	
 	object = emalloc(sizeof(wingdi_brush_object));
 	object->std.ce       = ce;
@@ -59,13 +58,7 @@ zend_object_value wingdibrush_new(zend_class_entry *ce TSRMLS_DC)
 	object->prop_handler = NULL;
     object->is_constructed  = 0;
 	
-	ALLOC_HASHTABLE(object->std.properties);
-	zend_hash_init(object->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
-	zend_hash_copy(object->std.properties, 
-        &ce->default_properties, 
-        (copy_ctor_func_t) zval_add_ref, 
-        (void *) &tmp, 
-        sizeof(zval *));
+	object_properties_init(&object->std, ce);
 
 	retval.handle   = zend_objects_store_put(object, 
         (zend_objects_store_dtor_t)zend_objects_destroy_object, 
@@ -176,7 +169,7 @@ PHP_METHOD(WinGdiBrush, __construct)
 			
 			MAKE_STD_ZVAL(colval);
 			ZVAL_STRING(colval, "hex", 0);
-			colref = Z_LVAL_P(std_object_handlers.read_property(color, colval, IS_LONG TSRMLS_CC));
+			colref = Z_LVAL_P(std_object_handlers.read_property(color, colval, IS_LONG, NULL TSRMLS_CC));
 		}
 		
 		memset(&lb, 0, sizeof(LOGBRUSH));

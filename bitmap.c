@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2007-2011 Elizabeth M. Smith, Sara Golemon, Tom Rogers |
+  | Copyright (c) 1997-2012 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -12,18 +12,14 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Elizabeth M. Smith <auroraeosrose@php.net>                   |
+  | Author: Elizabeth Smith <auroraeosrose@gmail.net>                    |
+  |         Mark G. Skilbeck   <markskilbeck@php.net>                    |
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #include "php_wingdi.h"
-#include "zend_exceptions.h"
 
-/* Custom Object junk */
 zend_class_entry *ce_wingdi_bitmap;
-
 void wingdi_bitmap_destructor(void *object TSRMLS_DC);
 
 /* ----------------------------------------------------------------
@@ -82,7 +78,6 @@ static const zend_function_entry wingdi_bitmap_functions[] = {
 zend_object_value wingdi_bitmap_object_new(zend_class_entry *ce TSRMLS_DC)
 {
 	zend_object_value retval;
-	zval *tmp;
 	wingdi_bitmap_object *object;
 
 	object = emalloc(sizeof(wingdi_bitmap_object));
@@ -93,9 +88,7 @@ zend_object_value wingdi_bitmap_object_new(zend_class_entry *ce TSRMLS_DC)
 	object->std.guards = NULL;
 	object->bitmap_handle = NULL;
        
-	ALLOC_HASHTABLE(object->std.properties);
-	zend_hash_init(object->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
-	zend_hash_copy(object->std.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+	object_properties_init(&object->std, ce);
 
 	return retval;
 }

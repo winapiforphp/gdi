@@ -145,12 +145,9 @@ zend_object_value wingdi_color_object_new(zend_class_entry *ce TSRMLS_DC)
 {
 	zend_object *object;
 	zend_object_value retval;
-	zval tmp;
 
 	retval = zend_objects_new(&object, ce TSRMLS_CC);
-	ALLOC_HASHTABLE(object->properties);
-	zend_hash_init(object->properties, 0, NULL, ZVAL_PTR_DTOR, 0);
-	zend_hash_copy(object->properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+	object_properties_init(object, ce);
 
 	/* Initialize custom internal properties here */
 	retval.handlers = &wingdi_color_object_handlers;
@@ -161,7 +158,7 @@ zend_object_value wingdi_color_object_new(zend_class_entry *ce TSRMLS_DC)
 
 /* {{{ wingdi_color_write_property
       intercept red/green/blue/hex and ignore everything else */
-static void wingdi_color_write_property(zval *object, zval *member, zval *value TSRMLS_DC)
+static void wingdi_color_write_property(zval *object, zval *member, zval *value, const zend_literal *key TSRMLS_DC)
 {
 	long red=0, green=0, blue=0;
 	zval *r, *g, *b, *rname, *gname, *bname, *hex, *hname;
@@ -174,7 +171,7 @@ static void wingdi_color_write_property(zval *object, zval *member, zval *value 
 		convert_to_long(value);
 		// sanity checking
 		Z_LVAL_P(value) = MAX(0,MIN(255,Z_LVAL_P(value)));
-		std_object_handlers.write_property(object, member, value TSRMLS_CC);
+		std_object_handlers.write_property(object, member, value, key TSRMLS_CC);
 
 		// grab red/green/blue values
 		MAKE_STD_ZVAL(rname);
@@ -183,16 +180,16 @@ static void wingdi_color_write_property(zval *object, zval *member, zval *value 
 		ZVAL_STRING(rname, "red", 0);
 		ZVAL_STRING(gname, "green", 0);
 		ZVAL_STRING(bname, "blue", 0);
-		r = std_object_handlers.read_property(object, rname, IS_LONG TSRMLS_CC);
-		g = std_object_handlers.read_property(object, gname, IS_LONG TSRMLS_CC);
-		b = std_object_handlers.read_property(object, bname, IS_LONG TSRMLS_CC);
+		r = std_object_handlers.read_property(object, rname, IS_LONG, key TSRMLS_CC);
+		g = std_object_handlers.read_property(object, gname, IS_LONG, key TSRMLS_CC);
+		b = std_object_handlers.read_property(object, bname, IS_LONG, key TSRMLS_CC);
 
 		// create the new hex value and write it
 		MAKE_STD_ZVAL(hex);
 		ZVAL_LONG(hex, RGB(Z_LVAL_P(r), Z_LVAL_P(g), Z_LVAL_P(b)));
 		MAKE_STD_ZVAL(hname);
 		ZVAL_STRING(hname, "hex", 0);
-		std_object_handlers.write_property(object, hname, hex TSRMLS_CC);
+		std_object_handlers.write_property(object, hname, hex, key TSRMLS_CC);
 
 	} else if(strcmp(Z_STRVAL_P(member), "hex") == 0) {
 		if(Z_TYPE_P(value) == IS_STRING) {
@@ -245,22 +242,22 @@ static void wingdi_color_write_property(zval *object, zval *member, zval *value 
 		ZVAL_STRING(bname, "blue", 0);
 
 		// store in properties
-		std_object_handlers.write_property(object, rname, r TSRMLS_CC);
-		std_object_handlers.write_property(object, bname, b TSRMLS_CC);
-		std_object_handlers.write_property(object, gname, g TSRMLS_CC);
+		std_object_handlers.write_property(object, rname, r, key TSRMLS_CC);
+		std_object_handlers.write_property(object, bname, b, key TSRMLS_CC);
+		std_object_handlers.write_property(object, gname, g, key TSRMLS_CC);
 
 		// write hex
 		ZVAL_LONG(value, RGB(red, green, blue));
-		std_object_handlers.write_property(object, member, value TSRMLS_CC);
+		std_object_handlers.write_property(object, member, value, key TSRMLS_CC);
 	} else {
-		std_object_handlers.write_property(object, member, value TSRMLS_CC);
+		std_object_handlers.write_property(object, member, value, key TSRMLS_CC);
 	}
 }
 /* }}} */
 
 /* {{{ wingdi_color_delete_property
        disallows unsetting the special built in stuff */
-static void wingdi_color_delete_property(zval *object, zval *member TSRMLS_DC)
+static void wingdi_color_delete_property(zval *object, zval *member, const zend_literal *key  TSRMLS_DC)
 {
 	convert_to_string(member);
 
@@ -271,7 +268,7 @@ static void wingdi_color_delete_property(zval *object, zval *member TSRMLS_DC)
 	}
 	else
 	{
-		std_object_handlers.unset_property(object, member TSRMLS_CC);
+		std_object_handlers.unset_property(object, member, key TSRMLS_CC);
 	}
 }
 /* }}} */

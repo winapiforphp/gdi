@@ -254,8 +254,7 @@ static zend_object_value wingdi_window_object_create(zend_class_entry *ce TSRMLS
 	window_object->window_handle = NULL;
 	window_object->is_constructed = FALSE;
  
-    zend_hash_copy(window_object->std.properties, &(ce->default_properties),
-        (copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
+    object_properties_init(&window_object->std, ce);
  
     retval.handle = zend_objects_store_put(window_object,
         (zend_objects_store_dtor_t) zend_objects_destroy_object,
@@ -290,8 +289,6 @@ PHP_MINIT_FUNCTION(wingdi_window)
     wingdi_window_constructor_wrapper.common.prototype = NULL;
     wingdi_window_constructor_wrapper.common.required_num_args = 0;
     wingdi_window_constructor_wrapper.common.arg_info = NULL;
-    wingdi_window_constructor_wrapper.common.pass_rest_by_reference = 0;
-    wingdi_window_constructor_wrapper.common.return_reference = 0;
     wingdi_window_constructor_wrapper.internal_function.handler = wingdi_window_construction_wrapper;
     wingdi_window_constructor_wrapper.internal_function.module = EG(current_module);
 

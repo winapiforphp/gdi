@@ -829,7 +829,6 @@ zend_object_value wingdi_devicecontext_object_new(zend_class_entry *ce TSRMLS_DC
 {
 	zend_object_value retval;
 	wingdi_devicecontext_object *object;
-	zval *tmp;
 
 	object                = emalloc(sizeof(wingdi_devicecontext_object));
 	object->std.ce        = ce;
@@ -845,9 +844,7 @@ zend_object_value wingdi_devicecontext_object_new(zend_class_entry *ce TSRMLS_DC
 	object->pen    = NULL;
 	object->region = NULL;
 
-	ALLOC_HASHTABLE(object->std.properties);
-	zend_hash_init(object->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
-	zend_hash_copy(object->std.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+	object_properties_init(&object->std, ce);
 
 	retval.handle   = zend_objects_store_put(object, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t) wingdi_devicecontext_free_storage, NULL TSRMLS_CC);
 	object->handle  = retval.handle;

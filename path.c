@@ -1014,7 +1014,6 @@ zend_object_value wingdi_path_object_new(zend_class_entry *ce TSRMLS_DC)
 {
     zend_object_value  ret;
     wingdi_path_object *path_obj;
-    zval               *tmp;
 
     path_obj = emalloc(sizeof(wingdi_path_object));
     path_obj->std.ce = ce;
@@ -1030,10 +1029,7 @@ zend_object_value wingdi_path_object_new(zend_class_entry *ce TSRMLS_DC)
     ret.handle   = path_obj->handle;
     ret.handlers = &object_handlers;
 
-    ALLOC_HASHTABLE(path_obj->std.properties);
-    zend_hash_init(path_obj->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
-    zend_hash_copy(path_obj->std.properties, &ce->default_properties,
-        (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
+    object_properties_init(&path_obj->std, ce);
 
     return ret;
 }
